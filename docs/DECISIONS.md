@@ -29,6 +29,11 @@ same PR that makes the choice. "Why" is the part you say out loud in the viva.
 | 22 | Above ~220 stops: sorted grid, one route hue, endpoints-only labels | Force layouts and 400 colours become a hairball at that size; a grid reads as structure and lets the journey stand out | Force layout for all sizes | UI |
 | 23 | Closure sweep re-runs the query once per route on the same index | It makes the "repeated queries without rebuilding" requirement visible and answers a real question ("which bus is critical?") | Rebuilding for each closure, or shipping a static list | UI |
 | 24 | The JSON reachable list is capped at 2,500 stops; layer **counts** are always exact | Bounds the response on pathological inputs; the legend discloses truncation, so the minimality argument never depends on the cap | Unbounded payload, or silently drawing a subset | UI |
+| 25 | A **real BMTC sample** (`samples/bmtc.txt`) alongside the synthetic ones | Real stop names carry the demo; the graph is still ordinary contract input, so the algorithm is unchanged | Synthetic-only samples — safe but forgettable | UI / Role 3 |
+| 26 | Busiest 400 route numbers, one direction each, longer pattern | Fits 400 routes and 12,325 appearances; keeps the recognisable services and city coverage | All 4,895 route numbers — exceeds the contract; random 400 — poor coverage | Role 3 |
+| 27 | Stop names become tokens; original names live in `bmtc.json` | The frozen grammar splits on whitespace, but the UI should show "Kempegowda Bus Station" | Change the grammar to quoted names — breaks the frozen contract | Role 2 / UI |
+| 28 | Routes stay undirected even though GTFS has UP/DOWN patterns | The problem statement explicitly allows riding against the listed order; one name per route fits the contract | Duplicate routes with `_UP`/`_DOWN` — halves unique services | Role 1 |
+| 29 | No map tiles or third-party map library; real coordinates + local projection | Works offline and keeps the build dependency-free; attribution is a caption | Leaflet/OSM tiles — network dependency and extra licence surface | UI |
 
 ## Perf log
 

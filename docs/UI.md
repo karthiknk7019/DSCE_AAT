@@ -44,7 +44,7 @@ dependencies beyond POSIX sockets. The batch mode is untouched:
 | Why this is minimal | The layer histogram plus the argument: the destination first appears in layer *k*, and layers `0..k-1` contain every stop reachable with fewer buses. |
 | Closure sweep | Closes every route in turn and re-queries; reports which closures strand the passenger and which add buses. One index, N searches. |
 | Recent queries | Every query is clickable; the URL hash is shareable for sample networks. |
-| Network dialog | Four checked-in samples, or paste any network in the contract grammar. |
+| Network dialog | Five checked-in samples (including real BMTC), or paste any network in the contract grammar. |
 
 Everything is keyboard-friendly: `Enter` plans, `S` swaps, `/` focuses the
 origin field.

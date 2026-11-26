@@ -1,0 +1,14 @@
+JOURNEY 2 buses
+  1: 60-A 4th_T_Block_Jayanagara -> Mysore_Road_Bus_Station
+  2: KIA-10 Mysore_Road_Bus_Station -> Canara_Bank_Hebbala
+
+JOURNEY 1 buses
+  1: KIA-9 Kempegowda_Bus_Station(Majestic/KBS) -> Kempegowda_International_Airport
+
+JOURNEY 3 buses
+  1: MF-34 Banashankari_6th_Phase_5th_Block -> Kengeri_Bus_Stand
+  2: 226-N Kengeri_Bus_Stand -> Kempegowda_Bus_Station(Majestic/KBS)
+  3: 333-E Kempegowda_Bus_Station(Majestic/KBS) -> Marathahalli
+
+JOURNEY 1 buses
+  1: 349-C Kempegowda_Bus_Station(Majestic/KBS) -> Electronic_City
