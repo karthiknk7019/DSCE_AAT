@@ -108,6 +108,50 @@ void print_list(const std::vector<std::string>& items, std::size_t limit,
   }
 }
 
+// The BFS stores leg endpoints; a rider actually travels every stop between
+// them. Pick the shortest slice of the route (routes are undirected and a
+// stop may repeat), exactly as the interactive mode does.
+std::vector<std::string> trace_leg(const journey::Route& route,
+                                   const std::string& from,
+                                   const std::string& to) {
+  std::size_t best_i = 0;
+  std::size_t best_j = 0;
+  std::size_t best = route.stops.size() + 1;
+  for (std::size_t i = 0; i < route.stops.size(); ++i) {
+    if (route.stops[i] != from) {
+      continue;
+    }
+    for (std::size_t j = 0; j < route.stops.size(); ++j) {
+      if (route.stops[j] != to) {
+        continue;
+      }
+      const std::size_t dist = i <= j ? j - i : i - j;
+      if (dist < best) {
+        best = dist;
+        best_i = i;
+        best_j = j;
+      }
+    }
+  }
+  if (best > route.stops.size()) {
+    return {from, to};
+  }
+  std::vector<std::string> path;
+  if (best_i <= best_j) {
+    for (std::size_t k = best_i; k <= best_j; ++k) {
+      path.push_back(route.stops[k]);
+    }
+  } else {
+    for (std::size_t k = best_i;; --k) {
+      path.push_back(route.stops[k]);
+      if (k == best_j) {
+        break;
+      }
+    }
+  }
+  return path;
+}
+
 void explain(const Parsed& p, const Query& q) {
   journey::Journey journey;
   journey::QueryStats stats;
@@ -180,6 +224,25 @@ void explain(const Parsed& p, const Query& q) {
       const journey::Leg& leg = journey.legs[i];
       std::cout << "  " << (i + 1) << ". " << leg.route << "  " << leg.from
                 << " -> " << leg.to << "\n";
+
+      const journey::Route* route = nullptr;
+      for (const journey::Route& r : p.network.routes) {
+        if (r.name == leg.route) {
+          route = &r;
+          break;
+        }
+      }
+      const std::vector<std::string> stops =
+          route != nullptr ? trace_leg(*route, leg.from, leg.to)
+                           : std::vector<std::string>{leg.from, leg.to};
+      std::cout << "      traverses " << stops.size() << " stops: ";
+      for (std::size_t s = 0; s < stops.size(); ++s) {
+        if (s > 0) {
+          std::cout << " -> ";
+        }
+        std::cout << stops[s];
+      }
+      std::cout << "\n";
     }
     if (journey.legs.size() > 1) {
       std::cout << "  change at:";
