@@ -163,7 +163,7 @@ in the group chat, and put your name in the PR title.
 
 | # | Task | Suggested owner | Acceptance |
 |---|---|---|---|
-| U1 | Commit/push the UI workstream | whoever is at the keyboard | `git status` clean; `make && make test && make ui-test` on a fresh clone |
+| U1 | ~~Commit/push the UI workstream~~ **done in `d0594c0`** | — | — | `git status` clean; `make && make test && make ui-test` on a fresh clone |
 | U2 | Rehearse Act 2c twice with the actual network | all three | no fumbling; both CLI fallback and UI path shown |
 
 ### P1 — high value, small changes

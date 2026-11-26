@@ -8,21 +8,17 @@ the short version for whoever picks it up next; the detailed map is
 
 ## Git state
 
-- Branch: `main`
-- Base commit: `9a5fb54` (`cli: add --interactive From/To/closed prompt mode`)
-- **The UI work is not committed yet.** The working tree contains the changes
-  listed below. Commit on a branch and PR if you want it on GitHub before the
-  demo:
-
-```bash
-git switch -c ui/serve-and-inspect
-git add -A
-git commit -m "ui: add browser front-end, BFS layer view and closure sweep"
-git push -u origin ui/serve-and-inspect
-```
-
-Do not squash away the distinction between the frozen CLI and the additive UI;
-the commit message and the PR template should say which is which.
+- Branch: `main`, synced with `origin/main` (`d0594c0`).
+- The UI workstream is committed and pushed as
+  `d0594c0 ui: add browser front-end, BFS layer view and closure sweep`.
+- It was rebased over two teammate commits: `84e9634` (interactive route
+  details) and `cc67512` (hand-written `StopIdMap`). The only source conflict
+  was `src/graph.cpp`: the `find_journey_stats` hooks were re-applied on top of
+  `StopIdMap`, keeping the compact-ID BFS and the optional stats path. Both
+  perf rows in `docs/DECISIONS.md` were kept.
+- Re-verified after the rebase: `make` clean, `make test` passes, `make
+  ui-test` OK, `bash tools/smoke.sh` 4/4, the 5,000-network oracle passes, and
+  batch output is byte-exact.
 
 ## Verified on this machine
 
@@ -86,13 +82,12 @@ The batch path is untouched behaviourally:
 1. `make && make test && make ui-test && bash tools/smoke.sh`
 2. `make serve`, open <http://127.0.0.1:8080>, run the seven steps in
    `docs/DEMO-SCRIPT.md` → Act 2c.
-3. Commit and push the workstream.
+3. Pick a small backlog item from `docs/UI-ROLES.md` (U3, U5 and U9 are small).
 
 ## Known gaps
 
 Nothing blocks the demo. These are the honest weak spots:
 
-- **Uncommitted.** Until it is committed, a fresh clone has no UI.
 - **Single-threaded server.** One request at a time, loopback only. Fine for a
   demo; not a hosted service.
 - **Browser automation is manual.** `make ui-test` checks the API, not pixels.
