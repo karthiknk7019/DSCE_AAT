@@ -6,8 +6,20 @@ and any change to `include/journey.hpp` must be in that same PR.
 
 ## 1. The program
 
-`build/journey` reads a network and a list of queries from **stdin** and writes
-results to **stdout**. No file arguments, no flags, no network access.
+`build/journey` in **batch mode** (no arguments) reads a network and a list of
+queries from **stdin** and writes results to **stdout**. That is the graded
+deliverable, and it is the mode every test and sample uses.
+
+An optional interactive extension is available for live demos:
+
+```bash
+./build/journey --interactive samples/city.txt
+```
+
+It reads the network from the given file (or stdin if omitted), then prompts for
+`From:`, `To:` and closed route names, printing the same three output forms.
+Prompt text exists only in interactive mode and never appears in batch output.
+Any other argument prints a usage line and exits 1.
 
 ## 2. Input grammar
 

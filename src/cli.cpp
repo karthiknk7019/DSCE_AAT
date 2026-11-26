@@ -1,4 +1,5 @@
 // Role 2 owns this file. Do not edit it if you are Role 1 or Role 3.
+#include <cctype>
 #include <iostream>
 #include <istream>
 #include <ostream>
@@ -25,6 +26,36 @@ bool is_blank_or_comment(const std::string& line) {
       return ch == '#';
     }
   }
+  return true;
+}
+
+std::string trim(const std::string& text) {
+  size_t begin = 0;
+  size_t end = text.size();
+  while (begin < end && is_space(text[begin])) {
+    ++begin;
+  }
+  while (end > begin && is_space(text[end - 1])) {
+    --end;
+  }
+  return text.substr(begin, end - begin);
+}
+
+std::string lowercase(std::string text) {
+  for (char& ch : text) {
+    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  }
+  return text;
+}
+
+bool read_answer(std::ostream& out, std::istream& in, const char* prompt,
+                 std::string& answer) {
+  out << prompt << std::flush;
+  if (!std::getline(in, answer)) {
+    out << '\n';
+    return false;
+  }
+  answer = trim(answer);
   return true;
 }
 
@@ -138,6 +169,21 @@ bool parse_routes(std::istream& in, int& line_no, int route_count,
   return true;
 }
 
+bool parse_network(std::istream& in, Network& network,
+                   std::unordered_map<std::string, bool>& known_routes,
+                   int& line_no) {
+  int route_count = 0;
+  if (!parse_header(in, line_no, route_count)) {
+    return false;
+  }
+  std::vector<Route> routes;
+  if (!parse_routes(in, line_no, route_count, routes, known_routes)) {
+    return false;
+  }
+  network = build_network(routes);
+  return true;
+}
+
 void print_journey(std::ostream& out, const std::string& destination,
                    bool found, const Journey& journey, bool& printed_any) {
   // Separate consecutive blocks with a blank line, never trailing after last.
@@ -166,19 +212,11 @@ void print_journey(std::ostream& out, const std::string& destination,
 
 int run_cli(std::istream& in, std::ostream& out) {
   int line_no = 0;
-  int route_count = 0;
-  if (!parse_header(in, line_no, route_count)) {
-    return 1;
-  }
-
-  std::vector<Route> routes;
+  Network network;
   std::unordered_map<std::string, bool> known_routes;
-  if (!parse_routes(in, line_no, route_count, routes, known_routes)) {
+  if (!parse_network(in, network, known_routes, line_no)) {
     return 1;
   }
-
-  // Build the stop-to-routes index once so queries reuse it without rebuilding.
-  const Network network = build_network(routes);
 
   bool printed_any = false;
   std::string line;
@@ -216,6 +254,79 @@ int run_cli(std::istream& in, std::ostream& out) {
     const bool found =
         find_journey(network, source, destination, inactive_routes, journey);
     print_journey(out, destination, found, journey, printed_any);
+  }
+
+  return 0;
+}
+
+int run_interactive(std::istream& network_in, std::istream& input,
+                    std::ostream& out) {
+  Network network;
+  std::unordered_map<std::string, bool> known_routes;
+  int line_no = 0;
+  if (!parse_network(network_in, network, known_routes, line_no)) {
+    return 1;
+  }
+
+  const size_t route_count = network.routes.size();
+  const size_t stop_count = network.stop_to_routes.size();
+  out << "Network ready: " << route_count
+      << (route_count == 1 ? " route, " : " routes, ") << stop_count
+      << (stop_count == 1 ? " stop.\n" : " stops.\n");
+  out << "Type 'quit' at the From prompt to exit.\n\n";
+
+  std::string source;
+  while (true) {
+    if (!read_answer(out, input, "From: ", source)) {
+      break;
+    }
+    if (source.empty()) {
+      continue;
+    }
+    const std::string command = lowercase(source);
+    if (command == "quit" || command == "exit" || command == "q") {
+      break;
+    }
+
+    std::string destination;
+    if (!read_answer(out, input, "To:   ", destination)) {
+      break;
+    }
+    if (destination.empty()) {
+      out << "No destination entered, starting over.\n\n";
+      continue;
+    }
+
+    std::string closed_line;
+    if (!read_answer(out, input,
+                     "Closed routes (space separated, blank = none): ",
+                     closed_line)) {
+      break;
+    }
+    for (char& ch : closed_line) {
+      if (ch == ',') {
+        ch = ' ';
+      }
+    }
+
+    std::vector<std::string> inactive_routes;
+    std::istringstream closed(closed_line);
+    std::string name;
+    while (closed >> name) {
+      if (known_routes.find(name) == known_routes.end()) {
+        out << "WARNING: unknown route '" << name << "' ignored\n";
+        continue;
+      }
+      inactive_routes.push_back(name);
+    }
+
+    Journey journey;
+    const bool found =
+        find_journey(network, source, destination, inactive_routes, journey);
+    out << '\n';
+    bool printed_any = false;
+    print_journey(out, destination, found, journey, printed_any);
+    out << '\n';
   }
 
   return 0;

@@ -39,6 +39,16 @@ make test           # 14-case matrix + perf check
 bash tools/smoke.sh # byte-exact diff for every sample
 ```
 
+Enter a query by hand (interactive extension):
+
+```bash
+./build/journey --interactive samples/city.txt
+# From: Jayanagar
+# To:   Whitefield
+# Closed routes (space separated, blank = none):
+# -> JOURNEY 2 buses: 365 to Majestic, then V1 to Whitefield
+```
+
 Input format and exact output: [docs/CONTRACT.md](docs/CONTRACT.md).
 
 ## Sample networks

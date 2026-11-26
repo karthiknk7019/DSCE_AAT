@@ -67,6 +67,20 @@ Then point at the second query: "With Outer closed, the two-bus answer is gone
 and the planner falls back to the three-bus journey — same index, no rebuild.
 With Hop3 also closed it would print `NO JOURNEY`."
 
+## Act 2b — Let the evaluator choose (Role 2)
+
+```bash
+./build/journey --interactive samples/city.txt
+From: Jayanagar
+To:   Whitefield
+Closed routes (space separated, blank = none): V1
+```
+
+Say: "This is an extension on top of the batch deliverable: the same index and
+the same engine, but the passenger types the origin, destination and closures.
+`quit` leaves." Use it whenever an evaluator asks to pick the journey
+themselves.
+
 ## Act 3 — It scales (Role 3)
 
 ```bash

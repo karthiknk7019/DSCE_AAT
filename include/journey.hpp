@@ -67,4 +67,11 @@ bool find_journey(const Network& network, const std::string& source,
 // Input/output grammar: docs/CONTRACT.md.
 int run_cli(std::istream& in, std::ostream& out);
 
+// Optional interactive extension (`journey --interactive [network-file]`).
+// Reads the network from `network_in`, then asks on `input` for a source, a
+// destination and closed routes, one journey at a time.
+// Returns 0 on success, 1 when the network is malformed.
+int run_interactive(std::istream& network_in, std::istream& input,
+                    std::ostream& out);
+
 }  // namespace journey
