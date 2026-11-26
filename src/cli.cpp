@@ -185,9 +185,17 @@ int run_cli(std::istream& in, std::ostream& out) {
   while (next_content_line(in, line, line_no)) {
     std::istringstream iss(line);
     std::string cmd;
+    if (!(iss >> cmd)) {
+      continue;
+    }
+    if (cmd == "routes") {
+      std::cerr << "ERROR: line " << line_no
+                << ": network already built; 'routes' may appear only once\n";
+      return 1;
+    }
     std::string source;
     std::string destination;
-    if (!(iss >> cmd >> source >> destination) || cmd != "query") {
+    if (cmd != "query" || !(iss >> source >> destination)) {
       std::cerr << "ERROR: line " << line_no
                 << ": expected 'query <source> <destination> [inactive...]'\n";
       continue;
@@ -199,6 +207,7 @@ int run_cli(std::istream& in, std::ostream& out) {
       if (known_routes.find(inactive) == known_routes.end()) {
         std::cerr << "WARNING: line " << line_no
                   << ": unknown inactive route '" << inactive << "'\n";
+        continue;
       }
       inactive_routes.push_back(inactive);
     }
