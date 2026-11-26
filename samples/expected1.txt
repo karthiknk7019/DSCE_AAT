@@ -1,0 +1,8 @@
+JOURNEY 2 buses
+  1: R1 1 -> 7
+  2: R2 7 -> 6
+
+NO JOURNEY
+
+JOURNEY 0 buses
+  already at 7

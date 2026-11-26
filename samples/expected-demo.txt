@@ -1,0 +1,11 @@
+JOURNEY 2 buses
+  1: Outer A -> M
+  2: Outer2 M -> F
+
+JOURNEY 3 buses
+  1: Hop1 A -> B
+  2: Hop2 B -> C
+  3: Hop3 C -> F
+
+JOURNEY 1 buses
+  1: Hop1 A -> B

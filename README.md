@@ -1,0 +1,99 @@
+# The City That Couldn't Find Its Way
+
+**Problem Statement 10 — Graph Traversal and Route Planning**
+Data Structures and its Applications (1BCS305), Dayananda Sagar College of Engineering
+
+A city has many overlapping bus routes, and temporary closures make familiar
+paths unreliable. This project is a **journey planner** that:
+
+- finds a journey using the **minimum number of buses** (not the minimum stops),
+- shows the ordered routes and the stop where you change buses,
+- respects **inactive routes** on a per-query basis,
+- answers **repeated queries** on the same network without rebuilding its index.
+
+## Pick your role
+
+All three roles are equal in weight. Claim one by opening an issue with the
+**Role claim** template, then read [docs/ROLES.md](docs/ROLES.md) for the full
+task list.
+
+| Role | You own | Files | Pick it if you like |
+|---|---|---|---|
+| **1 — Core algorithm** | stop index + minimum-bus BFS | `src/graph.cpp` | algorithms, complexity, the "why BFS" questions |
+| **2 — CLI & I/O** | input parsing, output format, query loop | `src/cli.cpp`, `src/main.cpp` | making the tool usable and demo-ready |
+| **3 — Tests, perf & demo** | test suite, worst-case generator, demo script | `tests/`, `tools/`, `docs/DEMO-SCRIPT.md` | breaking things, proving correctness |
+
+> Every member must be able to **explain their own code** in the viva. The
+> classroom rules allow AI tools, but "the AI wrote it" is not an explanation.
+> See [docs/COURSE-MAPPING.md](docs/COURSE-MAPPING.md) for the course concepts
+> behind each role.
+
+## Quick start
+
+```bash
+make          # build build/journey
+make run      # run the illustrative example from the problem statement
+make test     # run the test suite (red until Role 1 lands the BFS)
+```
+
+Input format and exact output: [docs/CONTRACT.md](docs/CONTRACT.md).
+
+## Repo map
+
+```
+include/journey.hpp   frozen interface shared by all three roles
+src/graph.cpp         Role 1: build_network, find_journey
+src/cli.cpp           Role 2: run_cli (parse -> build once -> answer queries)
+src/main.cpp          Role 2: entry point
+tests/                Role 3: dependency-free tests (make test)
+tools/gen_network.cpp Role 3: 400-route / 40,000-appearance generator
+samples/              example, demo and expected outputs
+docs/                 contract, roles, decisions, course mapping, demo script
+```
+
+## Ground rules (from the course announcement)
+
+- AI tools are allowed, but **shortcuts / built-in functions that directly
+  solve the core problem are not**. We hand-write the BFS queue and the graph
+  index; no Boost, no library graph algorithms.
+- Every member must be ready to demonstrate and explain their individual
+  contribution.
+- Individual contribution and quality are graded, so commits and PRs must show
+  who did what.
+- Scope limit: up to **400 routes** and **40,000 stop appearances**.
+
+## Build order (what depends on what)
+
+Work is parallel, not sequential — but these are the real dependencies:
+
+1. **Setup** — roles claimed, all three have push access, contract read,
+   branch protection on.
+2. **Tests first** — Role 3 writes the failing cases from the contract. They
+   define "done" for everyone else.
+3. **In parallel** — Role 1 implements the BFS; Role 2 implements the CLI;
+   Role 3 expands the test matrix and the generator.
+4. **Integrate** — `make test` green on `main`, run the sample and demo.
+5. **Prove it** — worst-case network, then rehearse the demo until all three
+   can explain every design choice without notes.
+
+## Docs
+
+| File | What it is |
+|---|---|
+| [docs/CONTRACT.md](docs/CONTRACT.md) | input/output spec and API semantics — **read first** |
+| [docs/ROLES.md](docs/ROLES.md) | what each role builds, step by step |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | branches, PRs, reviews, AI rules |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | why we chose each design (viva ammo) |
+| [docs/COURSE-MAPPING.md](docs/COURSE-MAPPING.md) | which module each part comes from |
+| [docs/DEMO-SCRIPT.md](docs/DEMO-SCRIPT.md) | minute-by-minute demo with expected output |
+| [AGENTS.md](AGENTS.md) | rules for any AI assistant working in this repo |
+
+## Current status
+
+- [x] Interface frozen, skeleton compiles (`make`)
+- [x] Sample + demo inputs and expected outputs
+- [x] Tests written for the problem statement's cases (red on purpose)
+- [ ] Role 1: minimum-bus BFS
+- [ ] Role 2: parser + output
+- [ ] Role 3: full test matrix + perf generator
+- [ ] Demo rehearsed by all three
