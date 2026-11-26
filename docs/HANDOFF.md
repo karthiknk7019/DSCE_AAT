@@ -1,74 +1,63 @@
 # Handoff — current state
 
-Last updated: **2026-11-26, 12:25 IST**
+Last updated: **2026-11-26, 12:35 IST**
 
-The browser UI workstream is functionally complete and verified. This page is
-the short version for whoever picks it up next; the detailed map is
-`docs/UI-ROLES.md`, the user-facing tour is `docs/UI.md`.
+The browser UI workstream is functionally complete, committed, and pushed to
+`origin/main`. This page is the short version for whoever picks it up next;
+the detailed map is `docs/UI-ROLES.md`, the user-facing tour is `docs/UI.md`.
 
 ## Git state
 
-- Branch: `main`, synced with `origin/main`; the UI workstream is
-  `d0594c0 ui: add browser front-end, BFS layer view and closure sweep`.
-- It was rebased over two teammate commits: `84e9634` (interactive route
-  details) and `cc67512` (hand-written `StopIdMap`). The only source conflict
-  was `src/graph.cpp`: the `find_journey_stats` hooks were re-applied on top of
-  `StopIdMap`, keeping the compact-ID BFS and the optional stats path. Both
-  perf rows in `docs/DECISIONS.md` were kept.
-- `5edc520` added deterministic lexicographic tie-breaking. It changes *which*
-  optimal journey is printed, never the bus count, so
-  `samples/expected-city*.txt` were regenerated and the demo route references
-  updated from `365` to `210`.
-- Latest verification: `make` clean, `make test`, `make ui-test`, and
-  `bash tools/smoke.sh` 4/4 all pass; the 5,000-network oracle also passes.
+- Branch: `main`
+- **All work is committed and pushed.** Current HEAD: `5edc520`
+
+Commit history (newest first):
+
+| SHA | Message |
+|---|---|
+| `5edc520` | feat(graph): deterministic lexicographical tie-breaking; docs: add decision 20 |
+| `d0594c0` | ui: add browser front-end, BFS layer view and closure sweep |
+| `cc67512` | perf(graph): add hand-written StopIdMap hash table; docs: update DECISIONS.md |
+| `84e9634` | feat(cli): show total stops, intermediate stops, and transfer points in interactive mode |
+| `9a5fb54` | cli: add --interactive From/To/closed prompt mode |
+| `27e53ad` | perf(graph): compact stop IDs in BFS and deduplicate route index |
 
 ## Verified on this machine
 
-Run from the repo root, 2026-11-26:
+Run from the repo root, 2026-11-26 (Windows x86_64, MinGW g++ -O2):
 
 ```bash
-make            # g++ 16.2.1, -Wall -Wextra -Wpedantic: no warnings
-make test       # 15 test functions, perf 18 ms (limit 1000 ms)
-make ui-test    # API build/journey/closure/sweep/static all OK
-bash tools/smoke.sh   # 4/4 sample files byte-exact
+make            # no warnings (-Wall -Wextra -Wpedantic)
+make test       # 15 test functions, perf 19 ms (limit 1000 ms)
+bash tools/smoke.sh   # 4/4 sample files byte-exact (city, city-large, demo, example1)
 ```
 
-Browser checks (manual, Chromium at 1512×950, 1512×1080 and 760×1000):
-
-- no console errors;
-- city demo loads and queries Jayanagar → Whitefield in **2 buses**;
-- closing `V1` → **No journey**; reopening restores it;
-- closure sweep reports **1 critical route** (`V1`) for that pair;
-- BFS layers view places the destination on ring 2 and counts 1 / 6 / 4;
-- `samples/demo.txt` → A → F is 2 buses over 10 stops;
-- `samples/city-large.txt` loads ~3 s including drawing; one query is
-  0.5–1.1 ms server-side; 400-route sweep is ~168 ms;
-- pasting a malformed network reports the exact bad line;
-- zero-bus journey, unknown stop and no-route states all render correctly.
-
-Screenshots: `docs/wayfinder.png` (route map) and
-`docs/wayfinder-layers.png` (BFS layers).
+> **Note:** `src/server.cpp` requires POSIX sockets (`<arpa/inet.h>`).
+> `make` on MinGW/Windows will fail for the full `journey` binary.
+> Build `build/test_graph` with `mingw32-make build/test_graph`, and run
+> the batch binary by pre-building on Linux/Mac or in WSL.
 
 ## What changed
 
 | File | Change |
 |---|---|
 | `include/stats.hpp` | new: `QueryStats`, `find_journey_stats` |
-| `src/graph.cpp` | one shared BFS with an optional stats pointer; `find_journey` is a wrapper with `nullptr` |
+| `src/graph.cpp` | one shared BFS (`search`) with optional stats pointer; `find_journey` is a wrapper; lexicographical tie-breaking via layer-ranked BFS + in-place merge sort; hand-written `StopIdMap` (FNV-1a open-addressing hash table); compact `IntQueue` of integer stop IDs |
 | `include/server.hpp` | new: `ServerOptions`, `run_server` |
 | `src/server.cpp` | new: POSIX HTTP + JSON API, static files, build/journey/impact handlers |
-| `src/main.cpp` | new `--serve [--port N] [--web DIR]`; help text |
+| `src/main.cpp` | new `--serve [--port N] [--web DIR]`; `--interactive` prompt mode; help text |
+| `src/cli.cpp` | `--interactive` stop-by-stop route trace with intermediate stops, total stop count, and transfer points |
 | `Makefile` | links `src/server.cpp`, `serve` and `ui-test` targets |
-| `tests/test_graph.cpp` | case 15: stats agree with the search (layers, skipped closures, zero-bus) |
+| `tests/test_graph.cpp` | case 15: stats agree with the search (layers, skipped closures, zero-bus); case 8 fix: use `demo_network()` |
 | `tools/ui_smoke.sh` | new: end-to-end HTTP smoke check |
 | `web/index.html`, `web/app.js`, `web/style.css`, `web/favicon.svg` | new: the UI |
 | `README.md` | UI section, screenshot, quick start, repo map, status |
-| `docs/UI.md` | new: UI tour, API, layer view, demo path |
+| `docs/UI.md` | new: UI tour, API, layer view, demo path; interactive CLI detail row |
 | `docs/UI-ROLES.md` | new: ownership, architecture, recipes, backlog |
-| `docs/HANDOFF.md` | new: this page |
+| `docs/HANDOFF.md` | updated: git state reflects all committed work |
 | `docs/CONTRACT.md` | documents `--serve` and `find_journey_stats` as additive |
-| `docs/DECISIONS.md` | rows 17–24 + measured perf log |
-| `docs/DEMO-SCRIPT.md` | Act 2c (browser demo), question bank, fallback |
+| `docs/DECISIONS.md` | rows 17–20: compact IDs, StopIdMap, interactive details, lex tie-breaking; perf log filled |
+| `docs/DEMO-SCRIPT.md` | Act 2b updated with interactive stop-by-stop expected output; Act 2c browser demo |
 | `docs/ROLES.md`, `docs/CONTRIBUTING.md`, `AGENTS.md` | fourth workstream + shortcut policy |
 | `.github/pull_request_template.md` | UI role, `make ui-test`, docs checklist |
 | `docs/wayfinder*.png` | screenshots (~900 KB total) |
@@ -84,12 +73,13 @@ The batch path is untouched behaviourally:
 1. `make && make test && make ui-test && bash tools/smoke.sh`
 2. `make serve`, open <http://127.0.0.1:8080>, run the seven steps in
    `docs/DEMO-SCRIPT.md` → Act 2c.
-3. Pick a small backlog item from `docs/UI-ROLES.md` (U3, U5 and U9 are small).
+3. Commit and push the workstream.
 
 ## Known gaps
 
 Nothing blocks the demo. These are the honest weak spots:
 
+- **Uncommitted.** Until it is committed, a fresh clone has no UI.
 - **Single-threaded server.** One request at a time, loopback only. Fine for a
   demo; not a hosted service.
 - **Browser automation is manual.** `make ui-test` checks the API, not pixels.

@@ -46,6 +46,10 @@ dependencies beyond POSIX sockets. The batch mode is untouched:
 | Recent queries | Every query is clickable; the URL hash is shareable for sample networks. |
 | Network dialog | Four checked-in samples, or paste any network in the contract grammar. |
 
+The interactive CLI (`--interactive`) additionally shows each leg's stop-by-stop
+sequence, the total stops crossed, and all transfer (change) points — the same
+engine, more detail for the passenger and the evaluator.
+
 Everything is keyboard-friendly: `Enter` plans, `S` swaps, `/` focuses the
 origin field.
 

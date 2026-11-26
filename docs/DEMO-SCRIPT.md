@@ -77,10 +77,24 @@ To:   Whitefield
 Closed routes (space separated, blank = none): V1
 ```
 
-Say: "This is an extension on top of the batch deliverable: the same index and
-the same engine, but the passenger types the origin, destination and closures.
-`quit` leaves." Use it whenever an evaluator asks to pick the journey
-themselves.
+Expected output:
+
+```
+JOURNEY 2 buses
+  1: 365 Jayanagar -> Majestic
+  2: V1 Majestic -> Whitefield
+Route details:
+  1: 365 (4 stops): Jayanagar -> Lalbagh -> KRMarket -> Majestic
+  2: V1 (5 stops): Majestic -> MGRoad -> Domlur -> Marathahalli -> Whitefield
+Summary: 2 buses, 8 total stops, 1 transfer (change at: Majestic)
+
+NO JOURNEY
+```
+
+Say: \"The interactive mode shows every intermediate stop on each leg and the
+transfer point, so the passenger knows exactly where to change. With V1 closed,
+there is no path — same index, no rebuild. `quit` leaves.\"
+Use it whenever an evaluator asks to pick the journey themselves.
 
 ## Act 2c — The browser demo (two minutes, any role)
 
