@@ -2,6 +2,7 @@ build/
 *.o
 *.out
 a.out
+samples/big.txt
 .DS_Store
 .idea/
 .vscode/

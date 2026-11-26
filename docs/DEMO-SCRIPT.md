@@ -9,6 +9,7 @@ answer, a closure, and a performance number — then let all three members speak
 - [ ] Terminal font large; output visible to the evaluators.
 - [ ] `samples/expected1.txt` and `samples/expected-demo.txt` open in a second
       window as fallback if the live run misbehaves.
+- [ ] `make test` and `bash tools/smoke.sh` are green in this terminal.
 - [ ] All three members know who speaks in which act.
 - [ ] No uncommitted changes: `git status` is clean.
 
@@ -69,7 +70,7 @@ With Hop3 also closed it would print `NO JOURNEY`."
 ## Act 3 — It scales (Role 3)
 
 ```bash
-make gen
+make gen                       # writes samples/big.txt (400 routes, 40k stops)
 time ./build/journey < samples/big.txt
 ```
 
@@ -77,7 +78,9 @@ Say: "400 routes, 40,000 stop appearances, heavy overlap, a hundred queries.
 The index is built once. Each route is expanded at most once per query, so the
 run stays proportional to the input instead of the product of routes and stops."
 
-Report the measured wall time out loud.
+Report the measured wall time out loud. On a laptop expect a few milliseconds;
+`make test` prints the same measurement and fails only above the deliberately
+loose 1 s limit.
 
 ## Act 4 — The tests are the spec (Role 3)
 
@@ -89,6 +92,15 @@ Say: "Fourteen cases: the worked example, the closure, zero buses, disconnected
 networks, backwards riding, a route that repeats a stop, repeated queries on one
 index, and the worst-case network. Each success is checked for chaining, active
 routes, both stops served, and the known minimum."
+
+Then the byte-exact CLI check:
+
+```bash
+bash tools/smoke.sh
+```
+
+Say: "This diffs the real binary's stdout against both checked-in expected files,
+so a formatting regression cannot slip through."
 
 ## Act 5 — Why it is correct (Role 1)
 
