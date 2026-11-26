@@ -10,8 +10,8 @@ This page is the short version for whoever picks it up next; the detailed map is
 ## Git state
 
 - Branch: `main`; the redesign merge is `0a2ac9e` (parents `4591382` and
-  `9424cb6`). The old `ui/bmtc-redesign` branch is kept for history; do not
-  merge it again.
+  `9424cb6`), and the final integration of the R4/R6 data work is `018681d`.
+  The old `ui/bmtc-redesign` branch is kept for history; do not merge it again.
 - The merge kept the redesign layout/typography/geo projection and wired the
   teammate features into it: run-all queries (U4), hover highlight + tooltip
   (U3/U5), accessibility attributes (U7), pinch/tap guards (U8),
@@ -25,7 +25,9 @@ Recent commits on `main` (newest first):
 
 | SHA | Message |
 |---|---|
+| `018681d` | ui: merge teammate data/licence and refresh work into the redesign |
 | `0a2ac9e` | ui: merge the planner redesign and real BMTC geo map |
+| `a792a9e` | ui, data: add data/licence panel (R6) and BMTC refresh manifest check (R4) |
 | `4591382` | ui, server: add light theme (U14) and opt-in --log/--threads N (U11) |
 | `f254a38` | data: verify BMTC geo map, add standalone map renderer and screenshot |
 | `521e437` | docs: refresh the contributor start path, task board and handoff |

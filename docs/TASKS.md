@@ -69,7 +69,7 @@ remaining R1 work is visual verification of the geo map on the redesign branch
 
 | # | Pri | Task | Status | Owner | Acceptance / evidence |
 |---|---|---|---|---|---|
-| U16 | P0 | Merge the planner redesign + real BMTC geo map | done | Hermes agent | `0a2ac9e` merged into `main`; `make`, `make test`, `make ui-test`, `bash tools/smoke.sh` 5/5, `python3 tools/check_bmtc.py` and `bash tools/ui_demo_check.sh` all pass on the merged tree |
+| U16 | P0 | Merge the planner redesign + real BMTC geo map | done | Hermes agent | `0a2ac9e` merged into `main`, final integration `018681d`; `make`, `make test`, `make ui-test`, `bash tools/smoke.sh` 5/5, `make real-check`, `python3 tools/check_bmtc.py` and `bash tools/ui_demo_check.sh` all pass; BMTC loads 400 routes/2,175 stops at 1512×950 and 760×1000 with no console errors |
 
 ## Notes
 
