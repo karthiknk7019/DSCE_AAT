@@ -167,7 +167,10 @@
         <div class="dialog-error" id="pasteError" role="alert" hidden></div>
         <div class="paste-foot">
           <span class="micro">Limits: 400 routes · 40,000 stop appearances</span>
-          <button type="button" class="primary small" id="loadPaste">Build network</button>
+          <div class="paste-actions">
+            <button class="ghost small" id="clearPaste" type="button" hidden>Clear saved</button>
+            <button class="primary small" id="loadPaste" type="button">Build network</button>
+          </div>
         </div>
       </div>
     </div>

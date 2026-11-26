@@ -2272,6 +2272,50 @@ function setPair(source, destination, inactive) {
 
 // -------------------------------------------------------------- networking
 
+const PASTED_STORAGE_KEY = 'wayfinder.pastedNetwork.v1';
+
+function savePastedNetwork(name, routes, queries, rawText) {
+  try {
+    localStorage.setItem(
+      PASTED_STORAGE_KEY,
+      JSON.stringify({ name, routes, queries, rawText })
+    );
+  } catch (_) {
+    // Ignore storage quota or private-mode restrictions.
+  }
+}
+
+function loadSavedPastedNetwork() {
+  try {
+    const raw = localStorage.getItem(PASTED_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const data = JSON.parse(raw);
+    if (!data || typeof data.name !== 'string' || !Array.isArray(data.routes)) {
+      return null;
+    }
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
+function clearSavedPastedNetwork() {
+  try {
+    localStorage.removeItem(PASTED_STORAGE_KEY);
+  } catch (_) {
+    // Ignore storage restrictions.
+  }
+}
+
+function syncPasteClearButton() {
+  const btn = $('#clearPaste');
+  if (btn) {
+    btn.hidden = !loadSavedPastedNetwork();
+  }
+}
+
 async function installNetwork(name, routes, options) {
   const opts = options || {};
   const data = await api('/api/build', { name, routes });
@@ -2380,6 +2424,8 @@ function renderSampleGrid() {
     card.addEventListener('click', async () => {
       $('#networkDialog').close();
       try {
+        clearSavedPastedNetwork();
+        syncPasteClearButton();
         await loadSample(sample.file);
         toast(`Loaded ${sample.title}`);
       } catch (error) {
@@ -2620,12 +2666,29 @@ function bindEvents() {
 
   $('#openNetwork').addEventListener('click', () => {
     renderSampleGrid();
+    syncPasteClearButton();
     $('#pasteError').hidden = true;
     $('#networkDialog').showModal();
   });
   $('#closeDialog').addEventListener('click', () => $('#networkDialog').close());
   $('#networkDialog').addEventListener('close', () => {
     $('#openNetwork').focus();
+  });
+
+  $('#clearPaste').addEventListener('click', async () => {
+    clearSavedPastedNetwork();
+    syncPasteClearButton();
+    $('#pasteInput').value = '';
+    $('#pasteError').hidden = true;
+    if (!state.sampleFile) {
+      $('#networkDialog').close();
+      try {
+        await loadSample(SAMPLES[0].file);
+      } catch (error) {
+        toast(error.message);
+      }
+    }
+    toast('Saved pasted network cleared');
   });
 
   $('#loadPaste').addEventListener('click', async () => {
@@ -2637,6 +2700,8 @@ function bindEvents() {
       await installNetwork('pasted network', parsed.routes, {
         queries: parsed.queries,
       });
+      savePastedNetwork('pasted network', parsed.routes, parsed.queries, text);
+      syncPasteClearButton();
       $('#networkDialog').close();
       toast('Network built — index ready');
       const pair = parsed.queries[0];
@@ -2684,14 +2749,30 @@ async function init() {
   syncClearButtons();
 
   const hash = readHash();
-  const sample = SAMPLES.find((item) => item.file === hash.net) || SAMPLES[0];
-
-  try {
-    await loadSample(sample.file, { auto: false });
-  } catch (error) {
-    showFormError(`Could not load the starter network: ${error.message}`);
-    return;
+  const saved = !hash.net ? loadSavedPastedNetwork() : null;
+  let loadedSaved = false;
+  if (saved) {
+    try {
+      $('#pasteInput').value = saved.rawText || '';
+      await installNetwork(saved.name, saved.routes, {
+        queries: saved.queries || [],
+      });
+      loadedSaved = true;
+    } catch (_) {
+      clearSavedPastedNetwork();
+    }
   }
+
+  if (!loadedSaved) {
+    const sample = SAMPLES.find((item) => item.file === hash.net) || SAMPLES[0];
+    try {
+      await loadSample(sample.file, { auto: false });
+    } catch (error) {
+      showFormError(`Could not load the starter network: ${error.message}`);
+      return;
+    }
+  }
+  syncPasteClearButton();
 
   if (hash.from) {
     $('#fromInput').value = hash.from;
