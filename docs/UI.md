@@ -38,7 +38,7 @@ dependencies beyond POSIX sockets. The batch mode is untouched:
 
 | Area | What it shows |
 |---|---|
-| Route map | Every route as a coloured path, every stop as a node. Click a stop to set From, then To. Closed routes become dashed. |
+| Route map | Every route as a coloured path, every stop as a node. Click a stop to set From, then To. Hover or focus a route in the list to highlight its path; closed routes become dashed. |
 | BFS layers | Source in the centre; one dashed ring per bus. Node colour = buses needed. The shortest-path tree is reconstructed from the routes the search actually expanded. |
 | Result card | Buses boarded, ordered legs, transfer stops, stops served by those routes, and a **Copy CLI** button that copies the exact `JOURNEY ...` block. |
 | Why this is minimal | The layer histogram plus the argument: the destination first appears in layer *k*, and layers `0..k-1` contain every stop reachable with fewer buses. |

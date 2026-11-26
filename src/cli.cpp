@@ -367,6 +367,12 @@ int run_cli(std::istream& in, std::ostream& out) {
 
 int run_interactive(std::istream& network_in, std::istream& input,
                     std::ostream& out) {
+  // When reading both the network and queries from the same interactive stream,
+  // tell the user what to enter instead of blocking on a blank screen.
+  if (&network_in == &input) {
+    out << "Enter network ('routes <n>', then <n> route lines):\n"
+        << std::flush;
+  }
   Network network;
   std::unordered_map<std::string, bool> known_routes;
   int line_no = 0;

@@ -66,6 +66,9 @@ const state = {
   log: [],
   queries: [],
   viewport: null,
+  routeLayer: null,
+  routePaths: new Map(),
+  hoveredRoute: null,
   journeyPaths: [],
   raf: 0,
   drag: null,
@@ -632,10 +635,12 @@ function pickStop(stop) {
 
 function drawNetworkMap(viewport, width, height) {
   const large = state.stopSet.size > 380;
-  const routeLayer = svgEl('g');
+  const routeLayer = svgEl('g', { class: 'route-layer' });
   const journeyLayer = svgEl('g');
   const stopLayer = svgEl('g');
   const labelLayer = svgEl('g');
+  state.routeLayer = routeLayer;
+  state.routePaths = new Map();
 
   for (const route of state.network.routes) {
     const points = [];
@@ -659,12 +664,16 @@ function drawNetworkMap(viewport, width, height) {
     const path = svgEl('path', {
       d: pathFrom(points),
       class: closed ? 'route-path closed' : 'route-path',
+      'data-route': route.name,
       stroke,
       'stroke-width': large ? 0.9 : points.length <= 2 ? 2 : 2.4,
       opacity: closed ? 0.35 : large ? 0.42 : 0.44,
     });
+    path.dataset.baseStroke = stroke;
+    state.routePaths.set(route.name, path);
     routeLayer.appendChild(path);
   }
+  applyHoveredRoute();
 
   // Journey overlay: drawn under the stop nodes, with a glow under the core.
   const legs = state.result && state.result.found ? state.result.legs : [];
@@ -1127,6 +1136,8 @@ function renderMap(options) {
 
   cancelAnimationFrame(state.raf);
   clear(svg);
+  state.routeLayer = null;
+  state.routePaths = new Map();
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
 
   const viewport = svgEl('g');
@@ -1885,9 +1896,40 @@ function toggleClosure(name) {
   }
 }
 
+function applyHoveredRoute() {
+  if (!state.routeLayer) {
+    return;
+  }
+  const hovered = state.hoveredRoute;
+  state.routeLayer.classList.toggle('has-hover', Boolean(hovered));
+  for (const [name, path] of state.routePaths) {
+    const active = name === hovered;
+    path.classList.toggle('route-hover', active);
+    if (active) {
+      path.setAttribute('stroke', colorFor(name));
+      // Raise above sibling paths so overlapping dense routes stay visible.
+      if (path.parentNode === state.routeLayer) {
+        state.routeLayer.appendChild(path);
+      }
+    } else if (path.dataset.baseStroke) {
+      path.setAttribute('stroke', path.dataset.baseStroke);
+    }
+  }
+}
+
+function setHoveredRoute(routeName) {
+  const next = routeName || null;
+  if (state.hoveredRoute === next) {
+    return;
+  }
+  state.hoveredRoute = next;
+  applyHoveredRoute();
+}
+
 function renderRouteList() {
   const list = $('#routeList');
   clear(list);
+  list.onmouseleave = () => setHoveredRoute(null);
   if (!state.network) {
     return;
   }
@@ -1906,6 +1948,18 @@ function renderRouteList() {
       ? `Reopen ${route.name}`
       : `Close ${route.name} (${route.stops.length} stops)`;
     row.addEventListener('click', () => toggleClosure(route.name));
+    row.addEventListener('mouseenter', () => setHoveredRoute(route.name));
+    row.addEventListener('mouseleave', () => {
+      if (state.hoveredRoute === route.name) {
+        setHoveredRoute(null);
+      }
+    });
+    row.addEventListener('focus', () => setHoveredRoute(route.name));
+    row.addEventListener('blur', () => {
+      if (state.hoveredRoute === route.name) {
+        setHoveredRoute(null);
+      }
+    });
     list.appendChild(row);
   }
   const closedCount = $('#closedCount');

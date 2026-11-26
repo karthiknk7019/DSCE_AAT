@@ -57,12 +57,13 @@ All three roles are equal in weight. Comment **mine** on that role's issue
 ## Quick start
 
 ```bash
-make                # build build/journey (CLI + optional server)
-make run            # the problem statement's example
-make test           # 15-case matrix + perf check
-make serve          # browser UI at http://127.0.0.1:8080
-bash tools/smoke.sh # byte-exact diff for every sample
-bash tools/ui_smoke.sh  # build -> query -> closure -> sweep over HTTP
+make                              # build build/journey (CLI + optional server)
+make run                          # the problem statement's example
+./build/journey samples/demo.txt  # or pass any batch input file directly
+make test                         # 15-case matrix + perf check
+make serve                        # browser UI at http://127.0.0.1:8080
+bash tools/smoke.sh               # byte-exact diff for every sample
+bash tools/ui_smoke.sh            # build -> query -> closure -> sweep over HTTP
 ```
 
 Enter a query by hand (interactive extension):

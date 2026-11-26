@@ -8,11 +8,11 @@
 
 namespace {
 
-void print_usage() {
-  std::cout
-      << "usage: journey [--interactive [network-file]]\n"
+void print_usage(std::ostream& out) {
+  out << "usage: journey [input-file] | [--interactive [network-file]]\n"
       << "       journey --serve [--port N] [--web DIR]\n"
       << "  no arguments    read a network and 'query' lines from stdin\n"
+      << "  input-file      read a network and 'query' lines from a file\n"
       << "  --interactive   read a network, then prompt for From/To/closed\n"
       << "  --serve         start the browser UI (default port 8080)\n";
 }
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   const std::string first = argc > 1 ? argv[1] : "";
 
   if (first == "--help" || first == "-h") {
-    print_usage();
+    print_usage(std::cout);
     return 0;
   }
 
@@ -76,8 +76,21 @@ int main(int argc, char** argv) {
     }
     return journey::run_interactive(*network_in, std::cin, std::cout);
   }
+  if (argc == 2) {
+    // Reject unknown flags so typos fail fast instead of looking for a file.
+    if (!first.empty() && first[0] == '-') {
+      print_usage(std::cerr);
+      return 1;
+    }
+    std::ifstream file(first);
+    if (!file) {
+      std::cerr << "ERROR: cannot open '" << first << "'\n";
+      return 1;
+    }
+    return journey::run_cli(file, std::cout);
+  }
   if (argc > 1) {
-    print_usage();
+    print_usage(std::cerr);
     return 1;
   }
   return journey::run_cli(std::cin, std::cout);

@@ -1759,9 +1759,23 @@ dialog::backdrop {
   transition: opacity 0.2s, stroke-width 0.2s;
 }
 
+.route-layer.has-hover .route-path:not(.route-hover) {
+  opacity: 0.12 !important;
+}
+
 .route-path.closed {
   stroke-dasharray: 5 7;
   opacity: 0.16 !important;
+}
+
+.route-path.route-hover {
+  opacity: 1 !important;
+  stroke-width: 4.2 !important;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
+}
+
+.route-path.closed.route-hover {
+  opacity: 0.72 !important;
 }
 
 .stop-node {

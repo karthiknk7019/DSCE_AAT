@@ -129,15 +129,15 @@ tests.
 
 ### Deliverables
 
-- [ ] parse `routes <n>` and exactly `n` route lines, validating counts
-- [ ] call `build_network` **once**, outside the query loop
-- [ ] loop over `query` lines, call `find_journey`, print the result
-- [ ] all three output forms, byte-exact, one blank line between blocks
-- [ ] ignore blank lines and `#` comments
-- [ ] malformed query → message on stderr, continue with the next line
-- [ ] malformed network → message on stderr, return exit code 1
-- [ ] `NO JOURNEY` still exits 0
-- [ ] `./build/journey < samples/example1.txt` matches `samples/expected1.txt`
+- [x] parse `routes <n>` and exactly `n` route lines, validating counts
+- [x] call `build_network` **once**, outside the query loop
+- [x] loop over `query` lines, call `find_journey`, print the result
+- [x] all three output forms, byte-exact, one blank line between blocks
+- [x] ignore blank lines and `#` comments
+- [x] malformed query → message on stderr, continue with the next line
+- [x] malformed network → message on stderr, return exit code 1
+- [x] `NO JOURNEY` still exits 0
+- [x] `./build/journey < samples/example1.txt` matches `samples/expected1.txt`
 
 ### Plan
 
@@ -180,9 +180,10 @@ tests.
 
 ### Stretch
 
-- `--pretty` flag that adds a human-readable summary on stderr;
-- read from a file path argument if given, stdin otherwise;
-- a query counter and total timing line on stderr for the demo.
+- [x] interactive mode (`--interactive [network-file]`) with stop-by-stop route details and summary;
+- [x] read batch input from a file path argument if given (`./build/journey <file>`), stdin otherwise;
+- [ ] `--pretty` flag that adds a human-readable summary on stderr;
+- [ ] a query counter and total timing line on stderr for the demo.
 
 ---
 

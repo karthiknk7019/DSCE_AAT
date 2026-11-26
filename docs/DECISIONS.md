@@ -29,6 +29,8 @@ same PR that makes the choice. "Why" is the part you say out loud in the viva.
 | 22 | Above ~220 stops: sorted grid, one route hue, endpoints-only labels | Force layouts and 400 colours become a hairball at that size; a grid reads as structure and lets the journey stand out | Force layout for all sizes | UI |
 | 23 | Closure sweep re-runs the query once per route on the same index | It makes the "repeated queries without rebuilding" requirement visible and answers a real question ("which bus is critical?") | Rebuilding for each closure, or shipping a static list | UI |
 | 24 | The JSON reachable list is capped at 2,500 stops; layer **counts** are always exact | Bounds the response on pathological inputs; the legend discloses truncation, so the minimality argument never depends on the cap | Unbounded payload, or silently drawing a subset | UI |
+| 25 | Optional batch `[input-file]` in `main.cpp` while rejecting unknown `-` flags with usage on stderr | Lets users run `./build/journey samples/city.txt` without shell redirection while failing fast on CLI typos | Treating `--unknown` as a filename or forcing shell redirection | Role 2 |
+| 26 | Route list hover highlights `.route-path.route-hover` purely in CSS/DOM (`setHoveredRoute`) | Keeps map highlighting instant on 400-route networks without firing `/api/journey` or re-running force layout | Re-rendering the full SVG or querying the server on hover | Role 2 |
 
 ## Perf log
 
