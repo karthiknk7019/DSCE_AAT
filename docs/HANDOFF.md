@@ -84,7 +84,8 @@ The batch path is untouched behaviourally:
 1. `make && make test && make ui-test && bash tools/smoke.sh`
 2. `make serve`, open <http://127.0.0.1:8080>, run the seven steps in
    `docs/DEMO-SCRIPT.md` → Act 2c.
-3. Pick a small backlog item from `docs/UI-ROLES.md` (U3, U5 and U9 are small).
+3. Pick an unclaimed row from `docs/TASKS.md` (the specification is in
+   `docs/UI-ROLES.md`; U3, U5 and U9 are small).
 
 ## Known gaps
 

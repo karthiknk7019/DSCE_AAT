@@ -33,6 +33,7 @@ cd DSCE_AAT && make && make test
 
 ```bash
 git switch main && git pull
+# 0. Claim your row in docs/TASKS.md (or add one) before the first edit.
 git switch -c role1/bfs          # roleN/short-topic
 # ... work ...
 make && make test
@@ -40,6 +41,11 @@ git add -p                       # review your own diff before committing
 git commit -m "graph: implement minimum-bus BFS"
 git push -u origin role1/bfs
 ```
+
+`docs/TASKS.md` is the single source of truth for who is working on what. Keep
+your row `claimed` while you work and `done` (with the verifying command and
+commit) when you merge. If you are idle, take the first unclaimed P0 row, then
+P1 in ID order.
 
 Then open a PR and **squash merge** as soon as `make` and `make test` pass.
 Self-merge is allowed: ask the other two for a quick look when they are free,
@@ -111,5 +117,6 @@ reviewing it, and the command you ran to verify.
 - [ ] `make` builds with no warnings
 - [ ] `make test` passes (except the intentional red tests before Role 1 lands)
 - [ ] `make run` output matches `samples/expected1.txt`
+- [ ] your `docs/TASKS.md` row is `done`, with the command you ran and the commit
 - [ ] `docs/DECISIONS.md` updated if you made a design choice
 - [ ] you reread your own diff, `make` and `make test` are green, branch deleted

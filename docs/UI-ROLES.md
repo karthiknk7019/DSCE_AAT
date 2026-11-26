@@ -156,8 +156,12 @@ and compare by eye or with a screenshot differ.
 
 ## Task backlog
 
+**Status lives in `docs/TASKS.md`; the tables below are the specification.**
+Claim your row there before starting, keep it current while you work, and mark
+it `done` with the verifying command when the acceptance column passes.
+
 Priority is for the demo, not for theoretical completeness. Pick one, claim it
-in the group chat, and put your name in the PR title.
+in `docs/TASKS.md`, and put your name in the PR title.
 
 ### P0 — do before the demo if not already done
 
