@@ -53,7 +53,7 @@ Commit messages: `<area>: what changed` in the imperative
 
 | File | Owner | Anyone else may edit only after the owner says yes in the PR |
 |---|---|---|
-| `include/journey.hpp` | all three | **frozen**: needs 3 approvals |
+| `include/journey.hpp` | all three | **frozen**: tell the others before changing |
 | `src/graph.cpp` | Role 1 | |
 | `src/cli.cpp`, `src/main.cpp` | Role 2 | |
 | `tests/`, `tools/` | Role 3 | |
