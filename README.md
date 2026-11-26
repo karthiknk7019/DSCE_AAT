@@ -13,15 +13,17 @@ paths unreliable. This project is a **journey planner** that:
 
 ## Pick your role
 
-All three roles are equal in weight. Claim one by opening an issue with the
-**Role claim** template, then read [docs/ROLES.md](docs/ROLES.md) for the full
-task list.
+All three roles are equal in weight. Comment **mine** on that role's issue
+([#1](https://github.com/karthiknk7019/DSCE_AAT/issues/1),
+[#2](https://github.com/karthiknk7019/DSCE_AAT/issues/2),
+[#3](https://github.com/karthiknk7019/DSCE_AAT/issues/3)) to claim it, then read
+[docs/ROLES.md](docs/ROLES.md) for the full task list.
 
 | Role | You own | Files | Pick it if you like |
 |---|---|---|---|
-| **1 — Core algorithm** | stop index + minimum-bus BFS | `src/graph.cpp` | algorithms, complexity, the "why BFS" questions |
-| **2 — CLI & I/O** | input parsing, output format, query loop | `src/cli.cpp`, `src/main.cpp` | making the tool usable and demo-ready |
-| **3 — Tests, perf & demo** | test suite, worst-case generator, demo script | `tests/`, `tools/`, `docs/DEMO-SCRIPT.md` | breaking things, proving correctness |
+| **1 — Core algorithm** — [claim #1](https://github.com/karthiknk7019/DSCE_AAT/issues/1) | stop index + minimum-bus BFS | `src/graph.cpp` | algorithms, complexity, the "why BFS" questions |
+| **2 — CLI & I/O** — [claim #2](https://github.com/karthiknk7019/DSCE_AAT/issues/2) | input parsing, output format, query loop | `src/cli.cpp`, `src/main.cpp` | making the tool usable and demo-ready |
+| **3 — Tests, perf & demo** — [claim #3](https://github.com/karthiknk7019/DSCE_AAT/issues/3) | test suite, worst-case generator, demo script | `tests/`, `tools/`, `docs/DEMO-SCRIPT.md` | breaking things, proving correctness |
 
 > Every member must be able to **explain their own code** in the viva. The
 > classroom rules allow AI tools, but "the AI wrote it" is not an explanation.
@@ -32,8 +34,8 @@ task list.
 
 ```bash
 make          # build build/journey
-make run      # run the illustrative example from the problem statement
-make test     # run the test suite (red until Role 1 lands the BFS)
+make run      # illustrative example (stub output until Role 2 lands)
+make test     # test suite (red until Role 1 lands the BFS)
 ```
 
 Input format and exact output: [docs/CONTRACT.md](docs/CONTRACT.md).
