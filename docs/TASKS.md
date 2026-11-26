@@ -59,9 +59,9 @@ remaining R1 work is visual verification of the geo map on the redesign branch
 | R1 | P0 | Verify the real BMTC map at 1512×950 and 760×1000 | claimed | concurrent agent session | 400 routes / 2,175 stops load; Jayanagar → Hebbal draws 2 legs; no console errors; screenshot updated. Note: the geo map is now merged (`0a2ac9e`); ready for the owner to close |
 | R2 | P1 | Real route shapes from GTFS `shapes.txt` | unclaimed | Role 1 or UI | routes follow roads; JSON stays < 2 MB; shapes simplified and attributed |
 | R3 | P2 | Scale bar, north arrow, 8 landmark labels | unclaimed | Role 3 | static map furniture; hidden outside geo mode |
-| R4 | P2 | Data refresh script + checksum/provenance | unclaimed | Role 3 | rerun produces identical sample or reports a diff; licence/date recorded |
+| R4 | P2 | Data refresh script + checksum/provenance | done | Role 3 (karthiknk7019) | `make real-check` (`python3 tools/refresh_bmtc.py --check`) passed; `samples/bmtc.manifest.json` records SHA-256s + `ODbL 1.0` + `2026-11-26` + counts, and `tools/refresh_bmtc.py` reports UNCHANGED or unified diffs on re-import |
 | R5 | P2 | Both directions per route | unclaimed | contract discussion | requires a naming rule or grammar change; do not do silently |
-| R6 | P2 | Data and licence panel | unclaimed | Role 2 | attribution + source link + generated date visible in the dialog |
+| R6 | P2 | Data and licence panel | done | Role 2 (karthiknk7019) | `make && make ui-test && node --check web/app.js` passed; `#dataLicence` inside `#networkDialog` renders attribution, source link, and generated date from `/data/bmtc.json`, plus `bmtc.txt` added to `SAMPLES` |
 | R7 | P2 | Geo coverage test | done | Role 3 | `python3 tools/check_bmtc.py` → OK (400 routes, 12,325 appearances, 2,175 stops, 4 queries, 4 output blocks); committed at `0cab40c` |
 | R8 | P2 | Dense-map keyboard stop search | done | Role 2 (karthiknk7019) | `make && make test && make ui-test && bash tools/smoke.sh && node --check web/app.js` passed; `#stopSearch` ARIA combobox (`F` shortcut, Up/Down/Enter/Shift+Enter/Esc), `#focusOverlay` O(1) pulse/ring pan+zoom, and `#focusedStopBar` Set From/To actions |
 

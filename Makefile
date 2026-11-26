@@ -51,6 +51,7 @@ data: $(BIN)
 
 real-check:
 	python3 tools/check_bmtc.py
+	python3 tools/refresh_bmtc.py --check
 
 clean:
 	rm -rf $(BUILD)
