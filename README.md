@@ -11,6 +11,30 @@ paths unreliable. This project is a **journey planner** that:
 - respects **inactive routes** on a per-query basis,
 - answers **repeated queries** on the same network without rebuilding its index.
 
+![Wayfinder: route map, journey card and BFS minimality proof](docs/wayfinder.png)
+
+## See it in the browser
+
+```bash
+make          # batch CLI + optional UI server
+make serve    # http://127.0.0.1:8080
+```
+
+The UI is a thin front-end over the same C++ search: the browser sends a query,
+`src/server.cpp` calls `find_journey_stats()`, and the page draws the answer. It
+adds a route map, an animated journey, a **BFS layer view** that shows why the
+answer is minimal, per-route closure toggles, a **closure sweep** that re-queries
+once per route on the same index, and a network dialog for pasting an unseen
+input. No framework, no CDN, no build step; it works offline.
+
+The graded batch mode is unchanged:
+
+```bash
+./build/journey < samples/example1.txt   # byte-exact, see docs/CONTRACT.md
+```
+
+Details: [docs/UI.md](docs/UI.md).
+
 ## Pick your role
 
 All three roles are equal in weight. Comment **mine** on that role's issue
@@ -33,10 +57,12 @@ All three roles are equal in weight. Comment **mine** on that role's issue
 ## Quick start
 
 ```bash
-make                # build build/journey
+make                # build build/journey (CLI + optional server)
 make run            # the problem statement's example
-make test           # 14-case matrix + perf check
+make test           # 15-case matrix + perf check
+make serve          # browser UI at http://127.0.0.1:8080
 bash tools/smoke.sh # byte-exact diff for every sample
+bash tools/ui_smoke.sh  # build -> query -> closure -> sweep over HTTP
 ```
 
 Enter a query by hand (interactive extension):
@@ -69,13 +95,18 @@ stress input to `samples/big.txt` (gitignored) for performance runs.
 
 ```
 include/journey.hpp   frozen interface shared by all three roles
-src/graph.cpp         Role 1: build_network, find_journey
+include/stats.hpp     optional per-query instrumentation for the UI
+include/server.hpp    ServerOptions for the optional browser front-end
+src/graph.cpp         Role 1: build_network, find_journey, find_journey_stats
 src/cli.cpp           Role 2: run_cli (parse -> build once -> answer queries)
-src/main.cpp          Role 2: entry point
+src/main.cpp          Role 2: entry point (batch, interactive, --serve)
+src/server.cpp        local HTTP + JSON API, POSIX sockets only
 tests/                Role 3: dependency-free tests (make test)
 tools/gen_network.cpp Role 3: 400-route / 40,000-appearance generator
+tools/ui_smoke.sh     Role 3: end-to-end API check for the browser UI
+web/                  single-page UI: no framework, no CDN, no build step
 samples/              example, demo and expected outputs
-docs/                 contract, roles, decisions, course mapping, demo script
+docs/                 contract, roles, decisions, UI, course mapping, demo
 ```
 
 ## Ground rules (from the course announcement)
@@ -108,6 +139,9 @@ Work is parallel, not sequential — but these are the real dependencies:
 | File | What it is |
 |---|---|
 | [docs/CONTRACT.md](docs/CONTRACT.md) | input/output spec and API semantics — **read first** |
+| [docs/UI.md](docs/UI.md) | the browser front-end: API, BFS layer view, demo path |
+| [docs/UI-ROLES.md](docs/UI-ROLES.md) | UI ownership, architecture, extension recipes, backlog |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | current state, verification commands, known gaps |
 | [docs/ROLES.md](docs/ROLES.md) | what each role builds, step by step |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | branches, PRs, reviews, AI rules |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | why we chose each design (viva ammo) |
@@ -123,4 +157,5 @@ Work is parallel, not sequential — but these are the real dependencies:
 - [x] Role 1: minimum-bus BFS
 - [x] Role 2: parser + output
 - [x] Role 3: full test matrix + perf generator
+- [x] Browser UI: route map, BFS layer view, closure sweep, network paste
 - [ ] Demo rehearsed by all three

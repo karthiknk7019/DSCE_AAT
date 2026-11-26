@@ -7,6 +7,7 @@
 - [ ] Role 1 — `src/graph.cpp`
 - [ ] Role 2 — `src/cli.cpp`, `src/main.cpp`
 - [ ] Role 3 — `tests/`, `tools/`, demo docs
+- [ ] UI — `src/server.cpp`, `web/`, `include/stats.hpp`
 - [ ] Shared — `README.md`, `Makefile`, `docs/`
 
 ## How I verified it
@@ -14,6 +15,8 @@
 - [ ] `make` builds with no warnings
 - [ ] `make test` passes (or: only the documented red tests fail)
 - [ ] `./build/journey < samples/example1.txt` matches `samples/expected1.txt`
+- [ ] `make ui-test` passes (UI or API change)
+- [ ] `bash tools/smoke.sh` passes (output or parser change)
 - [ ] Ran the specific case this PR changes:
 
 ```
@@ -31,3 +34,6 @@ paste the command and the relevant output
 - [ ] No `TODO` left in code being merged
 - [ ] No unrelated reformatting
 - [ ] `docs/DECISIONS.md` updated if this PR makes a design choice
+- [ ] Docs updated in the same PR: `docs/UI.md` for user-facing UI changes,
+      `docs/UI-ROLES.md` for ownership/backlog, `docs/HANDOFF.md` for state
+- [ ] If this changed the UI visually, refreshed `docs/wayfinder*.png`

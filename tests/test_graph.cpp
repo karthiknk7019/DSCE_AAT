@@ -13,6 +13,7 @@
 
 #include "check.hpp"
 #include "journey.hpp"
+#include "stats.hpp"
 
 namespace {
 
@@ -242,6 +243,45 @@ void test_repeated_queries_use_the_same_index() {
   CHECK_TRUE(journey_is_valid(net, "1", "6", {}, second));
 }
 
+// Case 15: the optional stats wrapper must agree with the search it wraps.
+// The UI relies on `reached_buses` to draw BFS layers, so a wrong layer would
+// turn the "why is this minimal?" panel into a lie.
+void test_stats_match_the_search() {
+  journey::Network net = example_network();
+
+  journey::Journey j;
+  journey::QueryStats stats;
+  CHECK_TRUE(journey::find_journey_stats(net, "1", "6", {}, j, stats));
+  CHECK_EQ(j.legs.size(), 2u);
+  CHECK_EQ(stats.max_buses(), 2);
+  CHECK_EQ(stats.reached_stops.size(), stats.reached_buses.size());
+
+  // The destination must sit exactly in the layer equal to the journey size.
+  bool saw_destination = false;
+  for (std::size_t i = 0; i < stats.reached_stops.size(); ++i) {
+    if (stats.reached_stops[i] == "6") {
+      saw_destination = true;
+      CHECK_EQ(stats.reached_buses[i], 2);
+    }
+  }
+  CHECK_TRUE(saw_destination);
+  CHECK_TRUE(!stats.expanded_routes.empty());
+  CHECK_EQ(stats.inactive_routes_skipped, 0);
+
+  // Closing the only second bus must show up as a skipped route, and the
+  // reachable set must not include the destination.
+  CHECK_TRUE(!journey::find_journey_stats(net, "1", "6", {"R2"}, j, stats));
+  CHECK_TRUE(stats.inactive_routes_skipped > 0);
+  for (const std::string& stop : stats.reached_stops) {
+    CHECK_TRUE(stop != "6");
+  }
+
+  // A zero-bus journey still reports its single layer.
+  CHECK_TRUE(journey::find_journey_stats(net, "7", "7", {}, j, stats));
+  CHECK_EQ(stats.reached_stops.size(), 1u);
+  CHECK_EQ(stats.reached_buses[0], 0);
+}
+
 // Case 14: worst case from docs/ROLES.md - 400 routes, 40,000 appearances,
 // heavy overlap, 100 queries. The 1 s limit is deliberately loose: it catches
 // an accidental O(routes x stops) rescan, not machine speed.
@@ -315,6 +355,7 @@ int main() {
   test_chain_of_three_buses();
   test_zero_stop_route();
   test_repeated_queries_use_the_same_index();
+  test_stats_match_the_search();
   test_worst_case_performance();
 
   if (check_failures == 0) {

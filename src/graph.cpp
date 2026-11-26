@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "journey.hpp"
+#include "stats.hpp"
 
 namespace journey {
 namespace {
@@ -129,6 +130,8 @@ Network build_network(const std::vector<Route>& routes) {
   return network;
 }
 
+namespace {
+
 // Minimum-bus BFS.
 //
 // A stop -> route edge costs one bus, and a route -> stop edge costs zero
@@ -142,14 +145,25 @@ Network build_network(const std::vector<Route>& routes) {
 // produce a longer journey; skipping it keeps a query at O(A), where A is the
 // number of stop appearances. Inactive routes are filtered here rather than in
 // the index, so closures never force a rebuild.
-bool find_journey(const Network& network, const std::string& source,
-                  const std::string& destination,
-                  const std::vector<std::string>& inactive_routes,
-                  Journey& out) {
+//
+// `stats` may be null (the graded path, zero extra work); when it is non-null
+// the same traversal also records the layers it discovered, which is what the
+// UI uses to prove minimality.
+bool search(const Network& network, const std::string& source,
+            const std::string& destination,
+            const std::vector<std::string>& inactive_routes, Journey& out,
+            QueryStats* stats) {
   out.legs.clear();
+  if (stats != nullptr) {
+    *stats = QueryStats();
+  }
 
   // Already there: a valid zero-bus journey, even for an unknown stop.
   if (source == destination) {
+    if (stats != nullptr) {
+      stats->reached_stops.push_back(source);
+      stats->reached_buses.push_back(0);
+    }
     return true;
   }
 
@@ -176,12 +190,18 @@ bool find_journey(const Network& network, const std::string& source,
   std::vector<const std::string*> id_to_name;
   std::vector<int> parent_stop;
   std::vector<int> parent_route;
+  std::vector<int> depth;  // buses needed to reach each visited stop
   std::vector<char> route_expanded(network.routes.size(), 0);
 
   visited.insert_if_absent(source, 0);
   id_to_name.push_back(&source);
   parent_stop.push_back(-1);
   parent_route.push_back(-1);
+  depth.push_back(0);
+  if (stats != nullptr) {
+    stats->reached_stops.push_back(*id_to_name.front());
+    stats->reached_buses.push_back(0);
+  }
 
   IntQueue queue(network.stop_to_routes.size());
   queue.push(0);
@@ -203,7 +223,16 @@ bool find_journey(const Network& network, const std::string& source,
 
       const Route& route = network.routes[route_index];
       if (!inactive.empty() && inactive.find(route.name) != inactive.end()) {
+        if (stats != nullptr) {
+          ++stats->inactive_routes_skipped;
+        }
         continue;
+      }
+
+      if (stats != nullptr) {
+        stats->expanded_routes.push_back(route.name);
+        stats->expanded_route_buses.push_back(
+            depth[static_cast<std::size_t>(stop_id)]);
       }
 
       for (const std::string& next : route.stops) {
@@ -213,9 +242,15 @@ bool find_journey(const Network& network, const std::string& source,
         }
 
         // One more bus, no matter how many stops this route crosses.
+        const int next_depth = depth[static_cast<std::size_t>(stop_id)] + 1;
         id_to_name.push_back(&next);
         parent_stop.push_back(stop_id);
         parent_route.push_back(route_index);
+        depth.push_back(next_depth);
+        if (stats != nullptr) {
+          stats->reached_stops.push_back(*id_to_name.back());
+          stats->reached_buses.push_back(next_depth);
+        }
 
         if (next == destination) {
           int cur = next_id;
@@ -242,5 +277,22 @@ bool find_journey(const Network& network, const std::string& source,
 
   return false;
 }
+
+}  // namespace
+
+bool find_journey(const Network& network, const std::string& source,
+                  const std::string& destination,
+                  const std::vector<std::string>& inactive_routes,
+                  Journey& out) {
+  return search(network, source, destination, inactive_routes, out, nullptr);
+}
+
+bool find_journey_stats(const Network& network, const std::string& source,
+                        const std::string& destination,
+                        const std::vector<std::string>& inactive_routes,
+                        Journey& out, QueryStats& stats) {
+  return search(network, source, destination, inactive_routes, out, &stats);
+}
+
 
 }  // namespace journey

@@ -16,6 +16,17 @@ Shared duties for everyone:
 - be able to explain your own file line by line, and the *idea* of the other two;
 - rehearse the demo until you can run it without reading a script.
 
+There is also a **fourth, additive workstream: the browser UI**. It is not part
+of the graded batch contract, and it is split by surface so all three members
+contribute without colliding. Read `docs/UI-ROLES.md` for ownership, extension
+recipes and the task backlog; `docs/HANDOFF.md` has the current state and the
+exact verification commands.
+
+> Shortcut policy: only the **DSA core** must be hand-written (`src/graph.cpp`
+> — the queue and the BFS). Tooling around it (HTTP server, JSON, UI, browser
+> automation) may use pragmatic shortcuts, but `make` must stay dependency-free
+> and the batch CLI output must stay byte-exact.
+
 ---
 
 ## Role 1 — Core algorithm (`src/graph.cpp`)

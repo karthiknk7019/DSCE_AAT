@@ -19,6 +19,17 @@ An optional interactive extension is available for live demos:
 It reads the network from the given file (or stdin if omitted), then prompts for
 `From:`, `To:` and closed route names, printing the same three output forms.
 Prompt text exists only in interactive mode and never appears in batch output.
+
+An optional browser front-end is also available:
+
+```bash
+./build/journey --serve [--port N] [--web DIR]
+```
+
+It serves `web/` and a JSON API on `127.0.0.1` and answers journeys with the same
+search code. It is additive: no argument still means batch mode, and the batch
+grammar/output below is unchanged. See `docs/UI.md`.
+
 Any other argument prints a usage line and exits 1.
 
 ## 2. Input grammar
@@ -147,6 +158,14 @@ bool find_journey(const Network& network,
 `int run_cli(std::istream&, std::ostream&)` owns parsing and printing and
 returns the process exit code.
 
+### Additive instrumentation
+
+`include/stats.hpp` declares `find_journey_stats(...)`, which runs the same BFS
+and additionally fills a `QueryStats` (stops settled per bus count, expanded
+routes per layer, inactive routes skipped). `find_journey` is a thin wrapper
+that passes no stats pointer, so the graded path is unchanged and pays nothing.
+The web UI is the only caller.
+
 ## 6. Performance target
 
 With 400 routes and 40,000 stop appearances:
@@ -169,3 +188,4 @@ travel time, no preference ranking, no persistence. Every bus costs exactly 1.
 | `src/cli.cpp`, `src/main.cpp` | Role 2 |
 | `tests/`, `tools/` | Role 3 |
 | `samples/` | Role 3 (add cases, do not change `example1`) |
+| `src/server.cpp`, `web/`, `include/stats.hpp` | additive UI; never part of the batch contract |

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wayfinder — minimum-bus journey planner</title>
+  <meta name="description" content="A minimum-bus journey planner with a live BFS layer view. Data Structures and its Applications, DSCE.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="12.4" fill="none" stroke="currentColor" stroke-width="2.1"/>
+          <path d="M3.2 16h25.6" stroke="currentColor" stroke-width="2.1"/>
+          <circle cx="16" cy="16" r="3.2" fill="currentColor"/>
+        </svg>
+        <div class="brand-text">
+          <div class="brand-name">Wayfinder</div>
+          <div class="brand-sub">minimum-bus journey planner</div>
+        </div>
+      </div>
+
+      <button class="network-chip" id="openNetwork" title="Change network">
+        <span class="dot"></span>
+        <span class="chip-name" id="chipName">loading…</span>
+        <span class="chip-meta" id="chipMeta">—</span>
+        <svg viewBox="0 0 12 12" class="chevron" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
+
+      <div class="topbar-right">
+        <span class="live-pill"><i></i>BFS engine</span>
+        <button class="ghost" id="shareBtn" title="Copy a link to this query">Share</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="rail rail-left">
+        <section class="panel plan-panel">
+          <div class="panel-head">
+            <h2>Plan a journey</h2>
+            <span class="tag">fewest buses</span>
+          </div>
+
+          <div class="field">
+            <span class="field-label">From</span>
+            <div class="input-wrap">
+              <span class="pin pin-from"></span>
+              <input id="fromInput" list="stopList" autocomplete="off" spellcheck="false" placeholder="Pick a stop">
+              <button class="clear-input" data-clear="from" aria-label="Clear origin" hidden>×</button>
+            </div>
+          </div>
+
+          <button class="swap-btn" id="swapBtn" title="Swap origin and destination (S)">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3v9m0 0L1.7 9.7M4 12l2.3-2.3M12 13V4m0 0 2.3 2.3M12 4 9.7 6.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+
+          <div class="field">
+            <span class="field-label">To</span>
+            <div class="input-wrap">
+              <span class="pin pin-to"></span>
+              <input id="toInput" list="stopList" autocomplete="off" spellcheck="false" placeholder="Pick a stop">
+              <button class="clear-input" data-clear="to" aria-label="Clear destination" hidden>×</button>
+            </div>
+          </div>
+
+          <datalist id="stopList"></datalist>
+
+          <button class="primary" id="findBtn">
+            Find journey <kbd>↵</kbd>
+          </button>
+          <div class="field-error" id="formError" hidden></div>
+
+          <div class="quick-pairs" id="quickPairs"></div>
+        </section>
+
+        <section class="panel routes-panel">
+          <div class="panel-head">
+            <h2>Routes</h2>
+            <div class="head-tools">
+              <span class="closed-count" id="closedCount">none closed</span>
+              <button class="link" id="clearClosed">clear</button>
+            </div>
+          </div>
+          <p class="micro">Click a route to close it. Closures are applied per query; the index is never rebuilt.</p>
+          <div class="route-list" id="routeList"></div>
+        </section>
+
+        <div class="rail-foot">
+          <span class="mono">O(A)</span> per query · hand-written queue
+        </div>
+      </aside>
+
+      <section class="stage">
+        <div class="stage-bar">
+          <div class="seg" role="tablist" aria-label="Map mode">
+            <button role="tab" data-mode="network" class="on" aria-selected="true">Route map</button>
+            <button role="tab" data-mode="layers" aria-selected="false">BFS layers</button>
+          </div>
+          <div class="stage-actions">
+            <span class="stage-hint" id="stageHint">drag to pan · scroll to zoom</span>
+            <button class="icon-btn" id="zoomOut" title="Zoom out">−</button>
+            <button class="icon-btn" id="zoomIn" title="Zoom in">+</button>
+            <button class="icon-btn wide" id="zoomFit" title="Fit to view">Fit</button>
+          </div>
+        </div>
+
+        <div class="map-wrap" id="mapWrap">
+          <svg id="map" role="img" aria-label="Network map"></svg>
+          <div class="tooltip" id="tooltip" hidden></div>
+          <div class="map-legend" id="mapLegend" hidden></div>
+          <div class="map-caption" id="mapCaption"></div>
+          <div class="map-hint">click a stop to set From, then To</div>
+          <div class="map-empty" id="mapEmpty" hidden></div>
+        </div>
+      </section>
+
+      <aside class="rail rail-right" id="side">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-glyph" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 5"/>
+              <circle cx="32" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M32 8v9M32 47v9M8 32h9M47 32h9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <circle cx="32" cy="32" r="3" fill="currentColor"/>
+            </svg>
+          </div>
+          <h3>Ready when you are</h3>
+          <p>Pick a From and To, or start from a demo pair. Every answer is the fewest buses, not the fewest stops.</p>
+          <div class="demo-pairs" id="demoPairs"></div>
+          <ol class="how">
+            <li><span>01</span>Load a sample or paste your own network.</li>
+            <li><span>02</span>Close routes and watch the answer reroute.</li>
+            <li><span>03</span>Open BFS layers to see why it is minimal.</li>
+          </ol>
+        </div>
+
+        <div id="resultCard" hidden></div>
+        <div id="proofCard" hidden></div>
+        <div id="resilienceCard" hidden></div>
+        <div id="logCard" hidden></div>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="networkDialog">
+    <div class="dialog-body">
+      <header class="dialog-head">
+        <div>
+          <h2>Choose a network</h2>
+          <p class="micro">Loaded once, queried many times. Any sample is ordinary input text.</p>
+        </div>
+        <button class="icon-btn" id="closeDialog" aria-label="Close">×</button>
+      </header>
+
+      <div class="sample-grid" id="sampleGrid"></div>
+
+      <div class="paste-block">
+        <div class="paste-head">
+          <h3>Or paste a network</h3>
+          <span class="micro">routes &lt;n&gt; then n lines of <span class="mono">&lt;name&gt; &lt;k&gt; &lt;stops…&gt;</span></span>
+        </div>
+        <textarea id="pasteInput" spellcheck="false" placeholder="routes 3&#10;R1 3 1 2 7&#10;R2 3 3 6 7&#10;R3 2 7 8&#10;&#10;query 1 6"></textarea>
+        <div class="dialog-error" id="pasteError" hidden></div>
+        <div class="paste-foot">
+          <span class="micro">Limits: 400 routes · 40,000 stop appearances</span>
+          <button class="primary small" id="loadPaste">Build network</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

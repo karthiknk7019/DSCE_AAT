@@ -45,6 +45,24 @@ If you changed the interface, stop and ask: `include/journey.hpp` is frozen.
 - Every non-obvious algorithm step gets a one-line comment the author can
   defend out loud.
 
+## UI / tooling exception
+
+The hand-written and restricted-header rules above protect the **DSA core**:
+the queue and the BFS in `src/graph.cpp`. The optional browser workstream
+(`src/server.cpp`, `web/`, the API test) may use pragmatic shortcuts and
+third-party tooling, because it is not the graded algorithm and it ships no
+runtime dependency:
+
+- `make` must still build with no external libraries and no network;
+- `./build/journey` with no arguments must still match `samples/expected1.txt`
+  byte-for-byte;
+- the browser must never reimplement BFS — it calls the same
+  `find_journey_stats()`;
+- `include/journey.hpp` stays frozen.
+
+See `docs/UI-ROLES.md` for the split and `docs/CONTRIBUTING.md` §5 for the
+updated policy.
+
 ## Domain facts that are easy to get wrong
 
 - We minimise **buses boarded**, not stops visited. One BFS layer = one bus.

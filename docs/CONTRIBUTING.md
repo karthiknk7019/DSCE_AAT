@@ -45,7 +45,7 @@ Then open a PR and **squash merge** as soon as `make` and `make test` pass.
 Self-merge is allowed: ask the other two for a quick look when they are free,
 but a review is not a gate. Delete the branch.
 
-Branch names: `role1/...`, `role2/...`, `role3/...`.
+Branch names: `role1/...`, `role2/...`, `role3/...`, `ui/...`.
 Commit messages: `<area>: what changed` in the imperative
 (`cli: print transfer stops`, `tests: add overlapping-network case`).
 
@@ -58,6 +58,9 @@ Commit messages: `<area>: what changed` in the imperative
 | `src/cli.cpp`, `src/main.cpp` | Role 2 | |
 | `tests/`, `tools/` | Role 3 | |
 | `docs/DEMO-SCRIPT.md`, `docs/COURSE-MAPPING.md` | Role 3 | |
+| `include/stats.hpp`, the stats path in `src/graph.cpp` | Role 1 | the BFS itself stays Role 1's |
+| `src/server.cpp`, `include/server.hpp`, `web/` | shared UI surface | one driver per PR; announce in the group chat |
+| `docs/UI.md`, `docs/UI-ROLES.md`, `docs/HANDOFF.md` | shared | update in the same PR as the change |
 | `README.md`, `Makefile`, `docs/CONTRACT.md` | shared | edit with a PR |
 
 Never let an AI assistant rewrite a file you do not own. If two people need the
@@ -93,6 +96,12 @@ Not allowed:
 - committing API keys, tokens or `.env` files
 - letting an AI reformat or "clean up" files owned by someone else
 - claiming AI work as your own in the contribution discussion
+
+**Shortcut policy (updated):** only the DSA core is held to the hand-written
+rule. The HTTP server, JSON handling, UI, test tooling and browser automation
+may use pragmatic shortcuts or third-party tools, as long as `make` stays
+dependency-free and `./build/journey` still matches the contract byte-for-byte.
+If a shortcut changes the core, it is out of bounds.
 
 Disclose in the PR: tool name, what it produced, what you changed after
 reviewing it, and the command you ran to verify.
