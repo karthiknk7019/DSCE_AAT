@@ -50,6 +50,7 @@ Implemented and manually verified (2026-11-26):
 - [x] responsive down to ~390 px with touch pinch-zoom, tap-slop pan guard, and larger touch tap targets (**U8**)
 - [x] hover a route in the list to highlight its path on the map (`.route-hover`, **U3**)
 - [x] run all parsed `query` lines sequentially and show a clickable result table (**U4**)
+- [x] accessibility pass: `:focus-visible` rings, form `<label>`s, dialog `aria-labelledby`, tablist/tabpanel keyboard arrows, live regions, non-colour cues, AA `--dim` contrast (**U7**)
 - [x] `make ui-test` API smoke; screenshots in `docs/wayfinder*.png`
 
 Verified numbers on the i7-13620H demo machine:
@@ -180,7 +181,7 @@ in `docs/TASKS.md`, and put your name in the PR title.
 | U4 | ~~"Run all queries" from a pasted file~~ **done by Role 2** | M | Role 2 | parses the `query` lines already collected, runs them sequentially, shows a result table |
 | U5 | Route tooltip when hovering a path | S | Role 3 | tooltip shows name + stop count + open/closed |
 | U6 | Browser automation for the 6-step demo | M | Role 3 | one command reproduces Act 2c; screenshots on failure |
-| U7 | Accessibility pass | M | anyone | keyboard focus visible, dialog labelled, colour not the only signal, axe clean |
+| U7 | ~~Accessibility pass~~ **done by Role 2** | M | anyone | keyboard focus visible, dialog labelled, colour not the only signal, axe clean |
 | U8 | ~~Touch pinch-zoom and larger tap targets~~ **done by Role 2** | M | Role 2 | usable at 390 px wide; no accidental pan on tap |
 | U9 | Persist a pasted network in `localStorage` | S | Role 3 | reload restores name + routes; "clear" removes it |
 

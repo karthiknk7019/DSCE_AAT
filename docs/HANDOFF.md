@@ -85,8 +85,11 @@ Nothing blocks the demo. These are the honest weak spots:
   demo; not a hosted service.
 - **Browser automation is manual.** `make ui-test` checks the API, not pixels.
   Task U6 in `docs/UI-ROLES.md` covers adding Playwright for the UI part.
-- **Accessibility is not audited.** Keyboard entry works (`Enter`, `S`, `/`),
-  focus styles exist, but there has been no axe/Screen-reader pass (U7).
+- **Accessibility pass implemented (U7).** Added `:focus-visible` outlines,
+  form `<label>`s, `aria-labelledby` on `#networkDialog`, landmark labels,
+  live regions, tab arrow navigation, `closed` text badges, dashed destination
+  rings, and WCAG AA `--dim` contrast (automated `axe` run in headless
+  browser still recommended once Chromium/Playwright is wired under U6).
 - **Touch gestures & 390 px layout added (U8).** Two-finger pinch-zoom,
   10 px touch tap-slop pan guard, and larger mobile tap targets are implemented
   in `web/app.js` and `web/style.css` (not yet exercised on physical touch hardware).

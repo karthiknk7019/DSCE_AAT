@@ -33,6 +33,7 @@ same PR that makes the choice. "Why" is the part you say out loud in the viva.
 | 26 | Route list hover highlights `.route-path.route-hover` purely in CSS/DOM (`setHoveredRoute`) | Keeps map highlighting instant on 400-route networks without firing `/api/journey` or re-running force layout | Re-rendering the full SVG or querying the server on hover | Role 2 |
 | 27 | "Run all queries" executes parsed `query` lines sequentially via `/api/journey` (`runAllQueries`) | Reuses the single-threaded server and one built index without adding a new batch HTTP endpoint, and lets the user inspect any row on click | Adding a dedicated `/api/batch` endpoint or firing 100 concurrent requests | Role 2 |
 | 28 | Pointer-map pan/pinch with a 10 px touch tap-slop (`state.pointers`) and deferred pointer capture | Prevents minor finger drift on tap from panning the map or swallowing stop `click` events, while supporting two-finger pinch-zoom | Capturing pointer immediately on `pointerdown` with a 4 px threshold | Role 2 |
+| 29 | Global `:focus-visible` rings, explicit `<label>`/`aria-labelledby`, `closed` text badge, dashed destination ring, and `--dim: #8a9bb5` | Makes keyboard focus, dialog titles, open/closed routes, origin/destination endpoints, and secondary text accessible without relying on colour alone | Suppressing browser outlines or leaving `#5d6d87` low-contrast labels | Role 2 |
 
 ## Perf log
 

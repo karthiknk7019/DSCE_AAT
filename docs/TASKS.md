@@ -37,7 +37,7 @@ ID order. Do not wait to be asked.**
 | U4 | P1 | "Run all queries" from a pasted file | done | team | `3a7a2d2` landed: sequential runner + result table |
 | U5 | P1 | Route tooltip when hovering a path | unclaimed | Role 3 | tooltip shows name + stop count + open/closed |
 | U6 | P1 | Browser automation for the Act 2c demo | claimed | Hermes agent | one command reproduces Act 2c; screenshots on failure |
-| U7 | P1 | Accessibility pass | unclaimed | anyone | keyboard focus visible, dialog labelled, colour not the only signal, axe clean |
+| U7 | P1 | Accessibility pass | done | Role 2 (karthiknk7019) | `make && make test && make ui-test && bash tools/smoke.sh && node --check web/app.js` passed; added `:focus-visible`, `<label>`s, dialog `aria-labelledby`, tablist/tabpanel arrow keys, live regions, `--dim` AA contrast, `closed` text badge, and dashed destination ring (live browser `axe` pass still pending) |
 | U8 | P1 | Touch pinch-zoom and larger tap targets | done | Role 2 | `make && make test && make ui-test && bash tools/smoke.sh && node --check web/app.js` passed; two-finger pinch-zoom, 10 px touch tap-slop pan guard, and 390 px tap targets added (physical touch device not tested here) |
 | U9 | P1 | Persist a pasted network in `localStorage` | unclaimed | Role 3 | reload restores name + routes; "clear" removes it |
 | U10 | P2 | k-shortest / alternative journeys panel | unclaimed | Role 1 | new API field, tests, UI list; still BFS |

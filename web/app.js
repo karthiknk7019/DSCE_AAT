@@ -788,6 +788,7 @@ function drawNetworkMap(viewport, width, height) {
         fill: 'none',
         stroke: '#fbbf24',
         'stroke-width': 1.4,
+        'stroke-dasharray': '3.5 2.5',
         opacity: 0.9,
       })
     );
@@ -1123,6 +1124,7 @@ function drawLayerMap(viewport) {
           fill: 'none',
           stroke: '#fbbf24',
           'stroke-width': 1.5,
+          'stroke-dasharray': '3.5 2.5',
         })
       );
     }
@@ -2126,17 +2128,22 @@ function renderRouteList() {
     return;
   }
   for (const route of state.network.routes) {
+    const isClosed = state.closed.has(route.name);
     const row = elem('button', 'route-row');
     row.type = 'button';
-    if (state.closed.has(route.name)) {
+    row.setAttribute('aria-pressed', String(isClosed));
+    if (isClosed) {
       row.classList.add('closed');
     }
     const swatch = elem('span', 'swatch');
+    swatch.setAttribute('aria-hidden', 'true');
     swatch.style.background = colorFor(route.name);
     row.appendChild(swatch);
     row.appendChild(elem('span', 'rname', route.name));
-    row.appendChild(elem('span', 'rmeta', `${route.stops.length}`));
-    row.title = state.closed.has(route.name)
+    row.appendChild(
+      elem('span', 'rmeta', isClosed ? `${route.stops.length} · closed` : `${route.stops.length}`)
+    );
+    row.title = isClosed
       ? `Reopen ${route.name}`
       : `Close ${route.name} (${route.stops.length} stops)`;
     row.addEventListener('click', () => toggleClosure(route.name));
@@ -2362,6 +2369,8 @@ function renderSampleGrid() {
   clear(grid);
   for (const sample of SAMPLES) {
     const card = elem('button', 'sample-card');
+    card.type = 'button';
+    card.setAttribute('aria-pressed', String(state.sampleFile === sample.file));
     if (state.sampleFile === sample.file) {
       card.classList.add('on');
     }
@@ -2430,21 +2439,34 @@ function bindEvents() {
     }
   });
 
-  for (const button of document.querySelectorAll('.seg button')) {
-    button.addEventListener('click', () => {
-      const mode = button.getAttribute('data-mode');
-      if (mode === state.mode) {
-        return;
-      }
+  const tabs = Array.from(document.querySelectorAll('.seg button'));
+  const activateTab = (button) => {
+    const mode = button.getAttribute('data-mode');
+    for (const other of tabs) {
+      const active = other === button;
+      other.classList.toggle('on', active);
+      other.setAttribute('aria-selected', String(active));
+      other.tabIndex = active ? 0 : -1;
+    }
+    $('#mapWrap').setAttribute('aria-labelledby', button.id);
+    if (mode !== state.mode) {
       state.mode = mode;
-      for (const other of document.querySelectorAll('.seg button')) {
-        const active = other === button;
-        other.classList.toggle('on', active);
-        other.setAttribute('aria-selected', String(active));
-      }
       renderMap({ fit: true });
+    }
+  };
+  tabs.forEach((button, index) => {
+    button.addEventListener('click', () => activateTab(button));
+    button.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const nextIndex =
+          (index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) %
+          tabs.length;
+        tabs[nextIndex].focus();
+        activateTab(tabs[nextIndex]);
+      }
     });
-  }
+  });
 
   $('#zoomIn').addEventListener('click', () => zoomBy(1.25));
   $('#zoomOut').addEventListener('click', () => zoomBy(0.8));
@@ -2602,6 +2624,9 @@ function bindEvents() {
     $('#networkDialog').showModal();
   });
   $('#closeDialog').addEventListener('click', () => $('#networkDialog').close());
+  $('#networkDialog').addEventListener('close', () => {
+    $('#openNetwork').focus();
+  });
 
   $('#loadPaste').addEventListener('click', async () => {
     const text = $('#pasteInput').value;

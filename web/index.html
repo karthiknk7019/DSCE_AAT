@@ -23,21 +23,21 @@
         </div>
       </div>
 
-      <button class="network-chip" id="openNetwork" title="Change network">
-        <span class="dot"></span>
+      <button type="button" class="network-chip" id="openNetwork" title="Change network" aria-haspopup="dialog">
+        <span class="dot" aria-hidden="true"></span>
         <span class="chip-name" id="chipName">loading…</span>
         <span class="chip-meta" id="chipMeta">—</span>
         <svg viewBox="0 0 12 12" class="chevron" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       </button>
 
       <div class="topbar-right">
-        <span class="live-pill"><i></i>BFS engine</span>
-        <button class="ghost" id="shareBtn" title="Copy a link to this query">Share</button>
+        <span class="live-pill"><i aria-hidden="true"></i>BFS engine</span>
+        <button type="button" class="ghost" id="shareBtn" title="Copy a link to this query">Share</button>
       </div>
     </header>
 
     <main class="layout">
-      <aside class="rail rail-left">
+      <aside class="rail rail-left" aria-label="Journey planner and route closures">
         <section class="panel plan-panel">
           <div class="panel-head">
             <h2>Plan a journey</h2>
@@ -45,33 +45,33 @@
           </div>
 
           <div class="field">
-            <span class="field-label">From</span>
+            <label class="field-label" for="fromInput">From</label>
             <div class="input-wrap">
-              <span class="pin pin-from"></span>
+              <span class="pin pin-from" aria-hidden="true"></span>
               <input id="fromInput" list="stopList" autocomplete="off" spellcheck="false" placeholder="Pick a stop">
-              <button class="clear-input" data-clear="from" aria-label="Clear origin" hidden>×</button>
+              <button type="button" class="clear-input" data-clear="from" aria-label="Clear origin" hidden>×</button>
             </div>
           </div>
 
-          <button class="swap-btn" id="swapBtn" title="Swap origin and destination (S)">
+          <button type="button" class="swap-btn" id="swapBtn" title="Swap origin and destination (S)" aria-label="Swap origin and destination">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3v9m0 0L1.7 9.7M4 12l2.3-2.3M12 13V4m0 0 2.3 2.3M12 4 9.7 6.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
 
           <div class="field">
-            <span class="field-label">To</span>
+            <label class="field-label" for="toInput">To</label>
             <div class="input-wrap">
-              <span class="pin pin-to"></span>
+              <span class="pin pin-to" aria-hidden="true"></span>
               <input id="toInput" list="stopList" autocomplete="off" spellcheck="false" placeholder="Pick a stop">
-              <button class="clear-input" data-clear="to" aria-label="Clear destination" hidden>×</button>
+              <button type="button" class="clear-input" data-clear="to" aria-label="Clear destination" hidden>×</button>
             </div>
           </div>
 
           <datalist id="stopList"></datalist>
 
-          <button class="primary" id="findBtn">
+          <button type="button" class="primary" id="findBtn">
             Find journey <kbd>↵</kbd>
           </button>
-          <div class="field-error" id="formError" hidden></div>
+          <div class="field-error" id="formError" role="alert" hidden></div>
 
           <div class="quick-pairs" id="quickPairs"></div>
         </section>
@@ -81,7 +81,7 @@
             <h2>Routes</h2>
             <div class="head-tools">
               <span class="closed-count" id="closedCount">none closed</span>
-              <button class="link" id="clearClosed">clear</button>
+              <button type="button" class="link" id="clearClosed">clear</button>
             </div>
           </div>
           <p class="micro">Click a route to close it. Closures are applied per query; the index is never rebuilt.</p>
@@ -93,21 +93,21 @@
         </div>
       </aside>
 
-      <section class="stage">
+      <section class="stage" aria-label="Interactive network map">
         <div class="stage-bar">
           <div class="seg" role="tablist" aria-label="Map mode">
-            <button role="tab" data-mode="network" class="on" aria-selected="true">Route map</button>
-            <button role="tab" data-mode="layers" aria-selected="false">BFS layers</button>
+            <button type="button" id="tabNetwork" role="tab" data-mode="network" class="on" aria-selected="true" aria-controls="mapWrap">Route map</button>
+            <button type="button" id="tabLayers" role="tab" data-mode="layers" aria-selected="false" aria-controls="mapWrap" tabindex="-1">BFS layers</button>
           </div>
           <div class="stage-actions">
             <span class="stage-hint" id="stageHint">drag to pan · scroll to zoom</span>
-            <button class="icon-btn" id="zoomOut" title="Zoom out">−</button>
-            <button class="icon-btn" id="zoomIn" title="Zoom in">+</button>
-            <button class="icon-btn wide" id="zoomFit" title="Fit to view">Fit</button>
+            <button type="button" class="icon-btn" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+            <button type="button" class="icon-btn" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+            <button type="button" class="icon-btn wide" id="zoomFit" title="Fit to view">Fit</button>
           </div>
         </div>
 
-        <div class="map-wrap" id="mapWrap">
+        <div class="map-wrap" id="mapWrap" role="tabpanel" aria-labelledby="tabNetwork">
           <svg id="map" role="img" aria-label="Network map"></svg>
           <div class="tooltip" id="tooltip" hidden></div>
           <div class="map-legend" id="mapLegend" hidden></div>
@@ -117,7 +117,7 @@
         </div>
       </section>
 
-      <aside class="rail rail-right" id="side">
+      <aside class="rail rail-right" id="side" aria-label="Journey results and analysis">
         <div class="empty-state" id="emptyState">
           <div class="empty-glyph" aria-hidden="true">
             <svg viewBox="0 0 64 64">
@@ -137,7 +137,7 @@
           </ol>
         </div>
 
-        <div id="resultCard" hidden></div>
+        <div id="resultCard" aria-live="polite" hidden></div>
         <div id="proofCard" hidden></div>
         <div id="resilienceCard" hidden></div>
         <div id="batchCard" hidden></div>
@@ -146,34 +146,34 @@
     </main>
   </div>
 
-  <dialog id="networkDialog">
+  <dialog id="networkDialog" aria-labelledby="networkDialogTitle">
     <div class="dialog-body">
       <header class="dialog-head">
         <div>
-          <h2>Choose a network</h2>
+          <h2 id="networkDialogTitle">Choose a network</h2>
           <p class="micro">Loaded once, queried many times. Any sample is ordinary input text.</p>
         </div>
-        <button class="icon-btn" id="closeDialog" aria-label="Close">×</button>
+        <button type="button" class="icon-btn" id="closeDialog" aria-label="Close">×</button>
       </header>
 
       <div class="sample-grid" id="sampleGrid"></div>
 
       <div class="paste-block">
         <div class="paste-head">
-          <h3>Or paste a network</h3>
+          <label class="paste-label" for="pasteInput">Or paste a network</label>
           <span class="micro">routes &lt;n&gt; then n lines of <span class="mono">&lt;name&gt; &lt;k&gt; &lt;stops…&gt;</span></span>
         </div>
         <textarea id="pasteInput" spellcheck="false" placeholder="routes 3&#10;R1 3 1 2 7&#10;R2 3 3 6 7&#10;R3 2 7 8&#10;&#10;query 1 6"></textarea>
-        <div class="dialog-error" id="pasteError" hidden></div>
+        <div class="dialog-error" id="pasteError" role="alert" hidden></div>
         <div class="paste-foot">
           <span class="micro">Limits: 400 routes · 40,000 stop appearances</span>
-          <button class="primary small" id="loadPaste">Build network</button>
+          <button type="button" class="primary small" id="loadPaste">Build network</button>
         </div>
       </div>
     </div>
   </dialog>
 
-  <div class="toast" id="toast" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="/app.js"></script>
 </body>
