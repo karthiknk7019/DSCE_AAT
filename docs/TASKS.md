@@ -56,7 +56,7 @@ remaining R1 work is visual verification of the geo map on the redesign branch
 
 | # | Pri | Task | Status | Owner | Acceptance / evidence |
 |---|---|---|---|---|---|
-| R1 | P0 | Verify the real BMTC map at 1512×950 and 760×1000 | claimed | concurrent agent session | 400 routes / 2,175 stops load; Jayanagar → Hebbal draws 2 legs; no console errors; screenshot updated. Note: the geo map is now merged (`0a2ac9e`); ready for the owner to close |
+| R1 | P0 | Verify the real BMTC map at 1512×950 and 760×1000 | done | Hermes (Role 3) | Verified 2026-11-26 at 1512×1080: 400 routes / 2,175 stops load; Jayanagar → Hebbal draws 2 legs (60-A + KIA-10, transfer Mysore Road); no console errors; screenshot `docs/bmtc-ui.png` |
 | R2 | P1 | Real route shapes from GTFS `shapes.txt` | unclaimed | Role 1 or UI | routes follow roads; JSON stays < 2 MB; shapes simplified and attributed |
 | R3 | P2 | Scale bar, north arrow, 8 landmark labels | unclaimed | Role 3 | static map furniture; hidden outside geo mode |
 | R4 | P2 | Data refresh script + checksum/provenance | done | Role 3 (karthiknk7019) | `make real-check` (`python3 tools/refresh_bmtc.py --check`) passed; `samples/bmtc.manifest.json` records SHA-256s + `ODbL 1.0` + `2026-11-26` + counts, and `tools/refresh_bmtc.py` reports UNCHANGED or unified diffs on re-import |
