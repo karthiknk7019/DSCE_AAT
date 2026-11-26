@@ -51,8 +51,10 @@ planner only minimises boardings.
 ```
 samples/bmtc.txt              contract input: 400 routes + 4 query lines
 samples/expected-bmtc.txt     byte-exact CLI output, wired into tools/smoke.sh
+samples/bmtc.manifest.json    SHA-256 checksums + source, licence & date provenance
 web/data/bmtc.json            stop coordinates + display names + hubs + licence
 tools/import_bmtc.py          converter (Python 3 standard library only)
+tools/refresh_bmtc.py         refresh + checksum/provenance check (--check / --update-manifest)
 tools/render_bmtc_svg.py      standalone map for README/slides/fallback
 tools/check_bmtc.py           format, coverage, query and leg-chain checks
 docs/bmtc-map.svg / .png      the generated map
@@ -88,6 +90,7 @@ python3 tools/import_bmtc.py
 python3 tools/render_bmtc_svg.py
 ./build/journey < samples/bmtc.txt > samples/expected-bmtc.txt
 python3 tools/check_bmtc.py
+python3 tools/refresh_bmtc.py --check
 bash tools/smoke.sh
 ```
 

@@ -47,7 +47,7 @@ Implemented and manually verified (2026-11-26):
 - [x] "Why this is minimal" panel with the layer histogram
 - [x] closure sweep: one re-query per route on the same index
 - [x] recent queries, shareable URL hash for samples
-- [x] network dialog: four samples + paste an unseen network
+- [x] network dialog: five samples (including `bmtc.txt`) + data & licence panel (`#dataLicence`) + paste an unseen network (**R6**)
 - [x] responsive down to ~390 px with touch pinch-zoom, tap-slop pan guard, and larger touch tap targets (**U8**)
 - [x] hover a route in the list to highlight its path on the map (`.route-hover`, **U3**)
 - [x] run all parsed `query` lines sequentially and show a clickable result table (**U4**)
@@ -212,11 +212,11 @@ The BMTC sample is generated; the map pass is the open piece. Data details:
 | R1 | **Verify the real BMTC map** at 1512×950 and 760×1000 | S | UI driver | 400 routes/2,175 stops load, Jayanagar → Hebbal draws 2 legs, no console errors; screenshot updated |
 | R2 | Real route shapes from GTFS `shapes.txt` | L | Role 1 or UI | routes follow roads; JSON stays <2 MB; shapes simplified and attributed |
 | R3 | Scale bar, north arrow, 8 landmark labels | M | Role 3 | static map furniture; hidden outside geo mode |
-| R4 | Data refresh script + checksum/provenance | S | Role 3 | rerun produces identical sample or reports a diff; licence/date recorded |
+| R4 | ~~Data refresh script + checksum/provenance~~ **done by Role 3** | S | Role 3 | rerun produces identical sample or reports a diff; licence/date recorded |
 | R5 | Both directions per route | M | contract discussion | requires a naming rule or grammar change; do not do silently |
-| R6 | Data & licence panel | S | Role 2 | attribution + source link + generated date, visible in the dialog |
-| R7 | Geo coverage test | S | Role 3 | every stop in `bmtc.txt` exists in `bmtc.json`, every query has a journey, smoke includes the expected output |
-| R8 | Dense-map keyboard search | M | Role 2 | users can type a stop instead of hunting 2,175 dots; focus and selection accessible |
+| R6 | ~~Data & licence panel~~ **done by Role 2** | S | Role 2 | attribution + source link + generated date, visible in the dialog |
+| R7 | ~~Geo coverage test~~ **done by Role 3** | S | Role 3 | every stop in `bmtc.txt` exists in `bmtc.json`, every query has a journey, smoke includes the expected output |
+| R8 | ~~Dense-map keyboard search~~ **done by Role 2** | M | Role 2 | users can type a stop instead of hunting 2,175 dots; focus and selection accessible |
 
 R1 is the only blocker. R2 is the biggest visual upgrade if there is time.
 

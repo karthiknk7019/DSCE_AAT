@@ -1,0 +1,23 @@
+{
+  "city": "Bengaluru",
+  "source": "https://github.com/Vonter/bmtc-gtfs",
+  "license": "ODbL 1.0",
+  "generated": "2026-11-26",
+  "routes": 400,
+  "appearances": 12325,
+  "stops": 2175,
+  "files": {
+    "samples/bmtc.txt": {
+      "sha256": "064594379f0de470c12a4e0fd9294e6eb29c306ab43e1a1d246db5d5c588be91",
+      "bytes": 245053
+    },
+    "samples/expected-bmtc.txt": {
+      "sha256": "8c0c7292a94d705c65d48fdf254e91ae08e4117b68befef8ffc5fa4b9e6021ca",
+      "bytes": 535
+    },
+    "web/data/bmtc.json": {
+      "sha256": "a200290340dd3236aa83df227d2847b603fd864864991c4d1821d78aedcfe6d2",
+      "bytes": 187120
+    }
+  }
+}

@@ -1975,7 +1975,65 @@ dialog::backdrop {
   font-family: var(--mono);
   font-style: normal;
   font-size: 9px;
-  color: #46556d;
+  color: var(--dim);
+}
+
+.data-licence {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.dl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.dl-head h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dl-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--mint);
+  padding: 2px 6px;
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  border-radius: 6px;
+}
+
+.dl-text {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+
+.dl-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+.dl-meta a {
+  color: var(--mint);
+  text-decoration: none;
+}
+
+.dl-meta a:hover {
+  text-decoration: underline;
 }
 
 .paste-block {

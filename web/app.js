@@ -44,6 +44,12 @@ const SAMPLES = [
     note: '400 routes, 2,000 stops, 34,903 appearances, 100 queries.',
     badge: '400 routes',
   },
+  {
+    file: 'bmtc.txt',
+    title: 'Bengaluru · real BMTC',
+    note: '400 busiest BMTC routes across 2,175 real stops (ODbL 1.0).',
+    badge: '400 routes',
+  },
 ];
 
 const state = {
@@ -87,6 +93,7 @@ const state = {
   queryToken: 0,
   pendingQuery: false,
   activeField: 'from',
+  bmtcMeta: null,
   busy: false,
 };
 
@@ -2726,6 +2733,52 @@ function readHash() {
 
 // ------------------------------------------------------------- dialogs etc.
 
+async function loadDataLicence() {
+  if (!state.bmtcMeta) {
+    try {
+      const response = await fetch('/data/bmtc.json');
+      if (response.ok) {
+        state.bmtcMeta = await response.json();
+      }
+    } catch (_) {
+      // Keep the static fallback attribution if offline/unavailable.
+    }
+  }
+  const meta = state.bmtcMeta;
+  if (!meta) {
+    return;
+  }
+  const badge = $('#licenceBadge');
+  const source = $('#licenceSource');
+  const text = $('#licenceText');
+  const date = $('#licenceDate');
+  if (badge && meta.license) {
+    badge.textContent = meta.license;
+  }
+  if (source && meta.source) {
+    source.href = meta.source;
+    source.textContent = meta.source.replace(/^https?:\/\//, '');
+  }
+  if (text && meta.city) {
+    text.textContent = `${meta.city} BMTC GTFS data by Vonter/bmtc-gtfs (${meta.license || 'ODbL 1.0'}, not affiliated with BMTC).`;
+  }
+  if (date) {
+    const parts = [];
+    if (meta.generated) {
+      parts.push(`Generated ${meta.generated}`);
+    }
+    if (meta.routes) {
+      parts.push(`${formatCount(meta.routes)} routes`);
+    }
+    if (meta.stops) {
+      parts.push(`${formatCount(Object.keys(meta.stops).length)} stops`);
+    }
+    if (parts.length > 0) {
+      date.textContent = parts.join(' · ');
+    }
+  }
+}
+
 function renderSampleGrid() {
   const grid = $('#sampleGrid');
   clear(grid);
@@ -3138,6 +3191,7 @@ function bindEvents() {
 
   $('#openNetwork').addEventListener('click', () => {
     renderSampleGrid();
+    loadDataLicence();
     syncPasteClearButton();
     $('#pasteError').hidden = true;
     $('#networkDialog').showModal();
