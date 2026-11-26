@@ -166,7 +166,8 @@ void explain(const Parsed& p, const Query& q) {
     }
     if (has_destination) {
       std::cout << "    ^ destination first appears in this layer"
-                   " -> minimum " << bus << " buses\n";
+                   " -> minimum " << bus
+                << (bus == 1 ? " bus\n" : " buses\n");
     }
   }
 
@@ -201,7 +202,7 @@ void explain(const Parsed& p, const Query& q) {
 }  // namespace
 
 int main(int argc, char** argv) {
-  std::string network_path = "samples/city.txt";
+  std::string network_path = "samples/bmtc.txt";
   int argi = 1;
   if (argc > 1 && argv[1][0] != '-') {
     network_path = argv[1];
@@ -225,6 +226,35 @@ int main(int argc, char** argv) {
     std::cerr << "need a source and a destination\n";
     return 2;
   }
+
+  // The map shows pretty names ("Kempegowda Bus Station (Majestic/KBS)");
+  // the contract uses tokens. Accept both by trimming and joining words.
+  auto normalize = [](std::string s) {
+    const std::size_t b = s.find_first_not_of(" \t\r\n");
+    const std::size_t e = s.find_last_not_of(" \t\r\n");
+    if (b == std::string::npos) {
+      return std::string();
+    }
+    s = s.substr(b, e - b + 1);
+    std::string out;
+    for (char c : s) {
+      if (c == ' ' || c == '\t') {
+        c = '_';
+      }
+      if (c == '_' && !out.empty() && out.back() == '_') {
+        continue;
+      }
+      out += c;
+    }
+    // "Station_(Majestic" -> "Station(Majestic" (the GTFS token style).
+    const std::size_t paren = out.find("_(");
+    if (paren != std::string::npos) {
+      out.erase(paren, 1);
+    }
+    return out;
+  };
+  q.source = normalize(q.source);
+  q.destination = normalize(q.destination);
   if (argc > argi) {
     for (; argi < argc; ++argi) {
       q.inactive_routes.push_back(argv[argi]);
@@ -250,6 +280,21 @@ int main(int argc, char** argv) {
   Parsed parsed;
   if (!parse(file, parsed)) {
     return 1;
+  }
+
+  const auto& index = parsed.network.stop_to_routes;
+  if (index.find(q.source) == index.end() ||
+      index.find(q.destination) == index.end()) {
+    std::cerr << "stop not found in " << network_path << ":\n";
+    if (index.find(q.source) == index.end()) {
+      std::cerr << "  from: " << q.source << "\n";
+    }
+    if (index.find(q.destination) == index.end()) {
+      std::cerr << "  to:   " << q.destination << "\n";
+    }
+    std::cerr << "Use the tokens from " << network_path
+              << " (spaces become _).\n";
+    return 2;
   }
 
   std::cout << "Wayfinder - minimum-bus trace\n";
