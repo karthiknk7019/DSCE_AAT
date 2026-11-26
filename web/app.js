@@ -9,17 +9,27 @@
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+// Printed-map inks: dark enough for white route plates, still distinguishable
+// as hairlines on paper. Colour is identity, never decoration.
 const PALETTE = [
-  '#5eead4', '#38bdf8', '#a78bfa', '#fbbf24', '#fb7185', '#34d399',
-  '#f472b6', '#22d3ee', '#facc15', '#818cf8', '#4ade80', '#fb923c',
+  '#b23a2e', '#2b5f9e', '#2e6b4a', '#8f5f00', '#5d4384', '#10696f',
+  '#943a60', '#5a651f', '#8a4b2a', '#46617a', '#6e4b2e', '#3f6e5b',
 ];
 
+// One neutral-blue ramp for BFS depth, like height tints on a printed map.
 const DEPTH_COLORS = [
-  '#5eead4', '#38bdf8', '#a78bfa', '#fbbf24', '#fb7185', '#f472b6',
-  '#34d399', '#22d3ee',
+  '#14140e', '#1f4a6b', '#4c7a97', '#7fa5bc', '#aec4d3', '#cbd8e0',
+  '#dee6ea',
 ];
 
 const SAMPLES = [
+  {
+    file: 'bmtc.txt',
+    title: 'Bengaluru · real BMTC',
+    note: '400 busiest BMTC services, 2,175 real stops, coordinates from the GTFS.',
+    badge: '400 routes',
+    geo: '/data/bmtc.json',
+  },
   {
     file: 'city.txt',
     title: 'Bengaluru demo',
@@ -49,6 +59,8 @@ const SAMPLES = [
 const state = {
   network: null,
   sampleFile: null,
+  geo: null,
+  geoHubs: new Set(),
   routeByName: new Map(),
   stopRoutes: new Map(),
   stopSet: new Set(),
@@ -67,6 +79,9 @@ const state = {
   queries: [],
   viewport: null,
   journeyPaths: [],
+  routePaths: new Map(),
+  routeRows: new Map(),
+  hoveredRoute: null,
   raf: 0,
   drag: null,
   dragged: false,
@@ -288,6 +303,18 @@ function colorFor(routeName) {
   return state.colorFor.get(routeName) || '#8494ad';
 }
 
+// Real place names contain spaces, which the contract cannot represent in a
+// token. The sample uses underscores; the UI puts the pretty name back.
+function pretty(name) {
+  const display = state.geo && state.geo.display && state.geo.display[name];
+  return display || name.replace(/_/g, ' ');
+}
+
+function shortPretty(name) {
+  const text = pretty(name).replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+  return text.length > 26 ? `${text.slice(0, 24)}…` : text;
+}
+
 // ----------------------------------------------------------------- layout
 
 function goldenStart(count) {
@@ -408,7 +435,8 @@ function forceLayout() {
   );
 }
 
-function boundsOf(positions) {
+function boundsOf(positions, minimumSpan) {
+  const minimum = minimumSpan === undefined ? 1 : minimumSpan;
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -422,11 +450,11 @@ function boundsOf(positions) {
   if (!Number.isFinite(minX)) {
     return { minX: -1, minY: -1, maxX: 1, maxY: 1 };
   }
-  if (maxX - minX < 1) {
-    maxX = minX + 1;
+  if (maxX - minX < minimum) {
+    maxX = minX + minimum;
   }
-  if (maxY - minY < 1) {
-    maxY = minY + 1;
+  if (maxY - minY < minimum) {
+    maxY = minY + minimum;
   }
   return { minX, minY, maxX, maxY };
 }
@@ -441,21 +469,22 @@ function fitWorldToStage(positions, padding) {
   const wrap = $('#mapWrap');
   const width = Math.max(320, wrap.clientWidth);
   const height = Math.max(240, wrap.clientHeight);
-  const bounds = boundsOf(positions);
-  const spanX = Math.max(1, bounds.maxX - bounds.minX);
-  const spanY = Math.max(1, bounds.maxY - bounds.minY);
+  const bounds = boundsOf(positions, 0.000001);
+  const spanX = Math.max(0.000001, bounds.maxX - bounds.minX);
+  const spanY = Math.max(0.000001, bounds.maxY - bounds.minY);
   const pad = padding === undefined ? 70 : padding;
   const scale = Math.min(
     (width - pad * 2) / spanX,
     (height - pad * 2) / spanY,
-    2.2
+    state.geo ? 100000 : 2.2
   );
   // A wide stage suits a slightly wider graph; a mild stretch fills the canvas
   // without turning the map into a funhouse mirror.
   const stageAspect = width / height;
   const contentAspect = spanX / spanY;
-  const stretchX =
-    contentAspect < stageAspect
+  const stretchX = state.geo
+    ? 1
+    : contentAspect < stageAspect
       ? Math.min(1.35, stageAspect / contentAspect)
       : 1;
   const cx = (bounds.minX + bounds.maxX) / 2;
@@ -466,10 +495,72 @@ function fitWorldToStage(positions, padding) {
   }
 }
 
+function layoutGeo() {
+  const center = state.geo.center || [77.5946, 12.9716];
+  const lonScale = Math.cos((center[1] * Math.PI) / 180);
+  const positions = new Map();
+  for (const stop of state.stops) {
+    const coordinate = state.geo.stops[stop];
+    if (!coordinate) {
+      continue;
+    }
+    // Local equirectangular projection: x is compressed by cos(latitude), so
+    // the city keeps its real aspect ratio. fitWorldToStage scales it to the
+    // hole. No tile server, no network.
+    positions.set(stop, {
+      x: (coordinate[0] - center[0]) * lonScale,
+      y: center[1] - coordinate[1],
+    });
+  }
+  state.positions = positions;
+  state.geoHull = convexHull(Array.from(positions.values()));
+  state.geoBounds = boundsOf(positions, 0.000001);
+}
+
+function convexHull(points) {
+  if (points.length < 3) {
+    return points.slice();
+  }
+  const sorted = points
+    .slice()
+    .sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
+  const cross = (o, a, b) =>
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower = [];
+  for (const point of sorted) {
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0
+    ) {
+      lower.pop();
+    }
+    lower.push(point);
+  }
+  const upper = [];
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    const point = sorted[i];
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0
+    ) {
+      upper.pop();
+    }
+    upper.push(point);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
 function layoutNetwork() {
-  forceLayout();
-  fitWorldToStage(state.positions, 72);
-  state.bounds = boundsOf(state.positions);
+  if (state.geo && state.geo.stops) {
+    layoutGeo();
+    fitWorldToStage(state.positions, 46);
+  } else {
+    forceLayout();
+    fitWorldToStage(state.positions, 72);
+  }
+  state.bounds = boundsOf(state.positions, state.geo ? 0.000001 : 1);
 }
 
 // ------------------------------------------------------------------- zoom
@@ -524,7 +615,7 @@ function zoomBy(factor) {
 function nodeRadius(stop) {
   const total = state.stopSet.size;
   if (total > 800) {
-    return 1.7;
+    return state.geo ? 2.2 : 1.7;
   }
   if (total > 240) {
     return 2.5;
@@ -580,7 +671,7 @@ function makeTooltip(stop) {
   return (event) => {
     const tip = $('#tooltip');
     clear(tip);
-    tip.appendChild(elem('b', null, stop));
+    tip.appendChild(elem('b', null, pretty(stop)));
     const routes = Array.from(state.stopRoutes.get(stop) || []);
     const closedCount = routes.filter((name) => state.closed.has(name)).length;
     let label = `${routes.length} route${routes.length === 1 ? '' : 's'}`;
@@ -632,6 +723,46 @@ function pickStop(stop) {
 
 function drawNetworkMap(viewport, width, height) {
   const large = state.stopSet.size > 380;
+  if (state.geo && state.geoHull && state.geoHull.length >= 3) {
+    const hull = state.geoHull;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const point of hull) {
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    }
+    const backdrop = svgEl('g');
+    backdrop.appendChild(
+      svgEl('path', {
+        d: `${pathFrom(hull)} Z`,
+        fill: 'rgba(23, 23, 15, 0.022)',
+        stroke: 'rgba(23, 23, 15, 0.16)',
+        'stroke-width': 1,
+        'stroke-dasharray': '3 7',
+      })
+    );
+    const title = svgEl('text', {
+      x: (minX + maxX) / 2,
+      y: minY - 24,
+      class: 'geo-title',
+      'text-anchor': 'middle',
+    });
+    title.textContent = 'BENGALURU';
+    backdrop.appendChild(title);
+    const sub = svgEl('text', {
+      x: (minX + maxX) / 2,
+      y: minY - 10,
+      class: 'geo-sub',
+      'text-anchor': 'middle',
+    });
+    sub.textContent = 'BMTC · coordinates from the GTFS';
+    backdrop.appendChild(sub);
+    viewport.appendChild(backdrop);
+  }
   const routeLayer = svgEl('g');
   const journeyLayer = svgEl('g');
   const stopLayer = svgEl('g');
@@ -649,24 +780,25 @@ function drawNetworkMap(viewport, width, height) {
       continue;
     }
     const closed = state.closed.has(route.name);
-    // Dense networks get one muted hue: 400 colours are noise, and the
-    // journey overlay is the only thing that should compete for attention.
+    // Dense networks get one grey ink: 400 colours are noise, and the journey
+    // overlay is the only thing that should compete for attention.
     const stroke = closed
-      ? '#475569'
+      ? '#c9c2b2'
       : large
-        ? '#2f6273'
+        ? '#9c9585'
         : colorFor(route.name);
     const path = svgEl('path', {
       d: pathFrom(points),
       class: closed ? 'route-path closed' : 'route-path',
       stroke,
-      'stroke-width': large ? 0.9 : points.length <= 2 ? 2 : 2.4,
-      opacity: closed ? 0.35 : large ? 0.42 : 0.44,
+      'stroke-width': large ? 0.8 : points.length <= 2 ? 1.8 : 2.2,
+      opacity: closed ? 0.55 : large ? 0.5 : 0.78,
     });
     routeLayer.appendChild(path);
   }
 
-  // Journey overlay: drawn under the stop nodes, with a glow under the core.
+  // Journey overlay: a white casing under the route ink, the way a printed
+  // map keeps a line readable where it crosses other lines.
   const legs = state.result && state.result.found ? state.result.legs : [];
   state.journeyPaths = [];
   for (const leg of legs) {
@@ -675,19 +807,18 @@ function drawNetworkMap(viewport, width, height) {
       continue;
     }
     const color = colorFor(leg.route);
-    const glow = svgEl('path', {
+    const casing = svgEl('path', {
       d: pathFrom(points),
-      class: 'journey-glow',
-      stroke: color,
-      'stroke-width': 11,
+      class: 'journey-casing',
+      'stroke-width': large ? 7 : 8.5,
     });
     const line = svgEl('path', {
       d: pathFrom(points),
       class: 'journey-line',
       stroke: color,
-      'stroke-width': large ? 3.4 : 4.2,
+      'stroke-width': large ? 3.4 : 4,
     });
-    journeyLayer.appendChild(glow);
+    journeyLayer.appendChild(casing);
     journeyLayer.appendChild(line);
     state.journeyPaths.push(line);
   }
@@ -708,18 +839,18 @@ function drawNetworkMap(viewport, width, height) {
     }
     const radius = nodeRadius(stop);
     const onJourney = journeyStops.has(stop);
+    const leg = onJourney
+      ? state.result.legs.find((item) => item.from === stop || item.to === stop)
+      : null;
     const node = svgEl('circle', {
       cx: point.x.toFixed(2),
       cy: point.y.toFixed(2),
-      r: onJourney ? radius + 1.1 : radius,
+      r: onJourney ? radius + 0.6 : radius,
       class: 'stop-node',
-      fill: onJourney ? colorFor((state.result.legs.find((leg) => leg.from === stop || leg.to === stop) || {}).route) : '#0b1424',
-      stroke: onJourney ? '#06121a' : 'rgba(148, 163, 184, 0.45)',
-      'stroke-width': onJourney ? 1.2 : large ? 0.5 : 1,
+      fill: onJourney ? colorFor(leg && leg.route) : '#faf8f2',
+      stroke: onJourney ? '#faf8f2' : 'rgba(23, 23, 15, 0.45)',
+      'stroke-width': onJourney ? 1.4 : large ? 0.5 : 0.9,
     });
-    if (!onJourney) {
-      node.setAttribute('fill', '#0b1424');
-    }
     node.addEventListener('mouseenter', makeTooltip(stop));
     node.addEventListener('mouseleave', hideTooltip);
     node.addEventListener('click', (event) => {
@@ -729,7 +860,8 @@ function drawNetworkMap(viewport, width, height) {
     stopLayer.appendChild(node);
   }
 
-  // Endpoint rings sit above the plain nodes.
+  // Endpoint rings sit above the plain nodes: ink marks the origin, the signal
+  // red marks the destination.
   if (source && state.positions.has(source)) {
     const point = state.positions.get(source);
     stopLayer.appendChild(
@@ -738,9 +870,8 @@ function drawNetworkMap(viewport, width, height) {
         cy: point.y,
         r: nodeRadius(source) + 5,
         fill: 'none',
-        stroke: '#5eead4',
-        'stroke-width': 1.4,
-        opacity: 0.8,
+        stroke: '#17170f',
+        'stroke-width': 1.5,
       })
     );
   }
@@ -752,9 +883,8 @@ function drawNetworkMap(viewport, width, height) {
         cy: point.y,
         r: nodeRadius(destination) + 5,
         fill: 'none',
-        stroke: '#fbbf24',
-        'stroke-width': 1.4,
-        opacity: 0.9,
+        stroke: '#d9481c',
+        'stroke-width': 1.6,
       })
     );
   }
@@ -782,6 +912,7 @@ function drawNetworkMap(viewport, width, height) {
     (stop === source ? 100 : 0) +
     (stop === destination ? 100 : 0) +
     (transfers.has(stop) ? 50 : 0) +
+    (state.geoHubs.has(stop) ? 40 : 0) +
     (dense ? 0 : (state.stopRoutes.get(stop) || new Set()).size);
   const ordered = state.stops.slice().sort((a, b) => importance(b) - importance(a));
   const placedLabels = [];
@@ -794,11 +925,13 @@ function drawNetworkMap(viewport, width, height) {
       stop === source ||
       stop === destination ||
       transfers.has(stop) ||
+      state.geoHubs.has(stop) ||
       (!dense && (state.stopRoutes.get(stop) || new Set()).size >= 3);
     if (!showAll && !important) {
       continue;
     }
-    const boxWidth = stop.length * 5.8 + 10;
+    const labelText = state.geo ? shortPretty(stop) : stop;
+    const boxWidth = labelText.length * 5.8 + 10;
     const boxHeight = 13;
     const box = {
       minX: point.x - boxWidth / 2,
@@ -823,7 +956,7 @@ function drawNetworkMap(viewport, width, height) {
       'text-anchor': 'middle',
       class: important ? 'stop-label strong' : 'stop-label',
     });
-    label.textContent = stop;
+    label.textContent = labelText;
     labelLayer.appendChild(label);
   }
 
@@ -968,9 +1101,9 @@ function drawLayerMap(viewport) {
           cy: 0,
           r: radius,
           fill: 'none',
-          stroke: 'rgba(148, 163, 184, 0.28)',
+          stroke: 'rgba(23, 23, 15, 0.2)',
           'stroke-width': 1,
-          'stroke-dasharray': '3 6',
+          'stroke-dasharray': '2 6',
         })
       );
     }
@@ -997,15 +1130,15 @@ function drawLayerMap(viewport) {
   for (const [stop, point] of positions) {
     const depth = state.layerDepthByStop.get(stop) || 0;
     const color = DEPTH_COLORS[Math.min(depth, DEPTH_COLORS.length - 1)];
-    const radius = depth === 0 ? 8 : positions.size > 600 ? 2.4 : 4.2;
+    const radius = depth === 0 ? 7 : positions.size > 600 ? 2.4 : 4;
     const node = svgEl('circle', {
       cx: point.x,
       cy: point.y,
       r: radius,
       class: 'layer-node',
-      fill: depth === 0 ? color : '#081120',
+      fill: depth === 0 ? color : '#faf8f2',
       stroke: color,
-      'stroke-width': depth === 0 ? 0 : 1.6,
+      'stroke-width': depth === 0 ? 0 : 1.5,
     });
     node.addEventListener('mouseenter', makeTooltip(stop));
     node.addEventListener('mouseleave', hideTooltip);
@@ -1046,9 +1179,8 @@ function drawLayerMap(viewport) {
           y1: a.y,
           x2: b.x,
           y2: b.y,
-          class: 'journey-glow',
-          stroke: color,
-          'stroke-width': 13,
+          class: 'journey-casing',
+          'stroke-width': 9,
         })
       );
       const line = svgEl('line', {
@@ -1087,8 +1219,8 @@ function drawLayerMap(viewport) {
           cy: destination.y,
           r: 11,
           fill: 'none',
-          stroke: '#fbbf24',
-          'stroke-width': 1.5,
+          stroke: '#d9481c',
+          'stroke-width': 1.6,
         })
       );
     }
@@ -1106,7 +1238,7 @@ function drawLayerMap(viewport) {
         class: 'stop-label strong',
         'text-anchor': 'middle',
       });
-      label.textContent = stop;
+      label.textContent = pretty(stop);
       journeyLayer.appendChild(label);
     }
   }
@@ -1170,7 +1302,7 @@ function updateMapLegend() {
   }
   host.hidden = false;
   clear(host);
-  host.appendChild(elem('div', 'ml-title', 'one ring per bus'));
+  host.appendChild(elem('div', 'ml-title', 'BFS layers'));
   const layers = state.result.stats.layers || [];
   for (const layer of layers.slice(0, 6)) {
     const row = elem('div', 'ml-row');
@@ -1216,9 +1348,15 @@ function updateMapCaption() {
   }
   if (state.mode === 'layers' && state.result) {
     caption.appendChild(elem('span', null, 'BFS from'));
-    caption.appendChild(elem('b', null, state.result.source));
+    caption.appendChild(elem('b', null, pretty(state.result.source)));
     caption.appendChild(
       elem('span', null, `· ${formatCount(state.result.stats.stops_reached)} stops settled`)
+    );
+    return;
+  }
+  if (state.geo) {
+    caption.appendChild(
+      elem('span', null, `${state.network.routes.length} routes · ${formatCount(state.stopSet.size)} stops · BMTC GTFS · ODbL`)
     );
     return;
   }
@@ -1291,42 +1429,37 @@ function renderResult() {
 
   const card = elem('div', 'card result-card' + (result.found ? '' : ' no-route'));
   const head = elem('div', 'card-head');
-  head.appendChild(
-    elem('div', 'eyebrow', `Journey · ${result.source} → ${result.destination}`)
-  );
+  head.appendChild(elem('div', 'eyebrow', 'Journey'));
   head.appendChild(elem('span', 'pill-time', formatMicros(result.stats.microseconds)));
   card.appendChild(head);
 
-  if (result.found && result.buses === 0) {
-    const big = elem('div', 'big-result');
-    big.appendChild(elem('div', 'big-number zero', '0'));
-    const label = elem('div', 'big-label');
-    label.appendChild(elem('b', null, 'buses'));
-    label.appendChild(elem('span', null, 'already there'));
-    big.appendChild(label);
-    card.appendChild(big);
+  const title = elem('h2', 'journey-title');
+  title.appendChild(document.createTextNode(pretty(result.source)));
+  title.appendChild(elem('span', 'jt-arrow', '→'));
+  title.appendChild(document.createTextNode(pretty(result.destination)));
+  card.appendChild(title);
 
-    const note = elem('p', 'result-route');
-    note.appendChild(document.createTextNode('You are already at '));
-    note.appendChild(elem('b', null, result.destination));
-    note.appendChild(document.createTextNode('. No bus is needed.'));
-    card.appendChild(note);
-
-    const foot = elem('div', 'card-foot');
-    foot.appendChild(elem('span', 'micro', 'zero buses is trivially minimal'));
+  const addCopy = (foot) => {
     const copy = elem('button', 'copy-btn', 'Copy CLI');
     copy.addEventListener('click', async () => {
       const ok = await copyText(cliText(result));
       toast(ok ? 'Copied exact CLI output' : 'Copy failed');
     });
     foot.appendChild(copy);
-    card.appendChild(foot);
-    host.appendChild(card);
-    return;
-  }
+  };
+
+  const addAnswer = (value, unit, sub) => {
+    const answer = elem('div', 'answer');
+    answer.appendChild(elem('span', value === '—' ? 'big-number zero' : 'big-number', value));
+    const label = elem('span', 'big-label');
+    label.appendChild(elem('b', null, unit));
+    label.appendChild(elem('span', null, sub));
+    answer.appendChild(label);
+    card.appendChild(answer);
+  };
 
   if (!result.found) {
-    card.appendChild(elem('div', 'no-route-title', 'No journey'));
+    addAnswer('—', 'no route', 'search exhausted');
     const unknown = [result.source, result.destination].filter(
       (stop) => !state.stopSet.has(stop)
     );
@@ -1334,7 +1467,7 @@ function renderResult() {
     if (unknown.length > 0) {
       sub.textContent =
         unknown.length === 1
-          ? `"${unknown[0]}" is not served by any route in this network.`
+          ? `"${pretty(unknown[0])}" is not served by any route in this network.`
           : 'Neither stop is served by any route in this network.';
     } else {
       sub.textContent =
@@ -1352,7 +1485,7 @@ function renderResult() {
     addStat(formatCount(result.stats.stops_reached), 'stops reached');
     addStat(
       formatCount(result.stats.routes_expanded || result.stats.expanded_routes.length),
-      'routes explored'
+      'routes expanded'
     );
     addStat(formatCount(state.closed.size), 'closures active');
     addStat(formatMicros(result.stats.microseconds), 'search time');
@@ -1380,99 +1513,85 @@ function renderResult() {
     } else {
       foot.appendChild(elem('span', 'micro', 'no route closures active'));
     }
-    const copy = elem('button', 'copy-btn', 'Copy CLI');
-    copy.addEventListener('click', async () => {
-      const ok = await copyText(cliText(result));
-      toast(ok ? 'Copied exact CLI output' : 'Copy failed');
-    });
-    foot.appendChild(copy);
+    addCopy(foot);
     card.appendChild(foot);
     host.appendChild(card);
     return;
   }
 
-  const big = elem('div', 'big-result');
-  big.appendChild(elem('div', 'big-number', String(result.buses)));
-  const label = elem('div', 'big-label');
-  label.appendChild(elem('b', null, 'buses'));
-  label.appendChild(elem('span', null, 'minimum boarding count'));
-  big.appendChild(label);
-  card.appendChild(big);
-
-  const chain = elem('div', 'result-route');
-  result.legs.forEach((leg, index) => {
-    if (index > 0) {
-      chain.appendChild(elem('span', 'arrow', '→'));
-    }
-    const pill = elem('span', 'route-pill');
-    const dot = elem('span', 'swatch');
-    dot.style.background = colorFor(leg.route);
-    pill.appendChild(dot);
-    pill.appendChild(document.createTextNode(leg.route));
-    chain.appendChild(pill);
-  });
-  const servedStops = new Set();
-  for (const leg of result.legs) {
-    const route = state.routeByName.get(leg.route);
-    if (route) {
-      for (const stop of route.stops) {
-        servedStops.add(stop);
-      }
-    }
-  }
-  chain.appendChild(
-    elem('span', 'chain-meta', `· ${servedStops.size} stops on these routes`)
-  );
-  card.appendChild(chain);
-
-  const legs = elem('div', 'legs');
-  for (let index = 0; index < result.legs.length; index += 1) {
-    const leg = result.legs[index];
-    const row = elem('div', 'leg');
-    const dot = elem('span', 'leg-dot');
-    dot.style.setProperty('--c', colorFor(leg.route));
-    const body = elem('div', 'leg-body');
-    const top = elem('div', 'leg-top');
-    top.appendChild(elem('span', 'leg-index', String(index + 1).padStart(2, '0')));
-    const pill = elem('span', 'route-pill');
-    const swatch = elem('span', 'swatch');
-    swatch.style.background = colorFor(leg.route);
-    pill.appendChild(swatch);
-    pill.appendChild(document.createTextNode(leg.route));
-    top.appendChild(pill);
-    body.appendChild(top);
-
-    const stops = elem('div', 'leg-stops');
-    stops.appendChild(elem('span', null, leg.from));
-    stops.appendChild(elem('span', 'arrow', '→'));
-    const to = elem('span', 'to', leg.to);
-    stops.appendChild(to);
-    body.appendChild(stops);
-
-    row.appendChild(dot);
-    row.appendChild(body);
-    legs.appendChild(row);
-  }
-  card.appendChild(legs);
-
-  if (result.transfers.length > 0) {
-    const note = elem('div', 'transfer-note');
-    note.appendChild(elem('span', 'swap-glyph', '⇄'));
-    const word = result.transfers.length === 1 ? 'Change' : 'Changes';
-    note.appendChild(
-      elem('span', null, `${word} at ${result.transfers.join(' · ')}`)
-    );
+  if (result.buses === 0) {
+    addAnswer('0', 'buses', 'already there');
+    const note = elem('p', 'no-route-sub');
+    note.appendChild(document.createTextNode('The origin and destination are the same stop, '));
+    note.appendChild(elem('b', null, pretty(result.destination)));
+    note.appendChild(document.createTextNode('. No bus is needed.'));
     card.appendChild(note);
+
+    const foot = elem('div', 'card-foot');
+    foot.appendChild(elem('span', 'micro', 'zero is the smallest possible count'));
+    addCopy(foot);
+    card.appendChild(foot);
+    host.appendChild(card);
+    return;
   }
+
+  addAnswer(String(result.buses), 'buses', 'minimum');
+
+  // The itinerary is a route diagram: one continuous rail, one colour per leg,
+  // stop nodes sitting where the line changes colour.
+  const itinerary = elem('ol', 'itinerary');
+  const stopRow = (stop, cls, meta) => {
+    const row = elem('li', `it-stop ${cls}`);
+    row.appendChild(elem('span', 'it-node'));
+    const name = elem('span', 'it-name', pretty(stop));
+    if (meta) {
+      name.appendChild(elem('span', 'it-meta', meta));
+    }
+    row.appendChild(name);
+    return row;
+  };
+  const hopsFor = (leg) => {
+    const route = state.routeByName.get(leg.route);
+    if (!route) {
+      return 0;
+    }
+    const a = route.stops.indexOf(leg.from);
+    const b = route.stops.indexOf(leg.to);
+    return a < 0 || b < 0 ? 0 : Math.abs(a - b);
+  };
+
+  itinerary.appendChild(stopRow(result.source, 'start', 'start'));
+  result.legs.forEach((leg, index) => {
+    const color = colorFor(leg.route);
+    const row = elem('li', 'it-leg');
+    row.style.setProperty('--c', color);
+    const body = elem('div', 'it-body');
+    const plate = elem('span', 'route-plate', leg.route);
+    plate.style.setProperty('--c', color);
+    body.appendChild(plate);
+    const hops = hopsFor(leg);
+    if (hops > 0) {
+      body.appendChild(elem('span', 'it-meta', `${hops} stop${hops === 1 ? '' : 's'}`));
+    }
+    row.appendChild(body);
+    itinerary.appendChild(row);
+    const last = index === result.legs.length - 1;
+    itinerary.appendChild(
+      stopRow(leg.to, last ? 'end' : 'change', last ? 'destination' : 'change')
+    );
+  });
+  card.appendChild(itinerary);
 
   const foot = elem('div', 'card-foot');
-  foot.appendChild(elem('span', 'micro', 'one index · no rebuilds'));
-  const copy = elem('button', 'copy-btn', 'Copy CLI');
-  copy.addEventListener('click', async () => {
-    const ok = await copyText(cliText(result));
-    toast(ok ? 'Copied exact CLI output' : 'Copy failed');
-  });
-  foot.appendChild(copy);
+  const changes = result.transfers.length;
+  foot.appendChild(
+    elem(
+      'span',
+      'micro',
+      changes === 0 ? 'direct, no changes' : `${changes} change${changes === 1 ? '' : 's'} on the way`
+    )
+  );
+  addCopy(foot);
   card.appendChild(foot);
   host.appendChild(card);
 }
@@ -1503,7 +1622,7 @@ function renderProof() {
 
   const card = elem('div', 'card');
   const head = elem('div', 'card-head');
-  head.appendChild(elem('div', 'eyebrow', 'Why this is minimal'));
+  head.appendChild(elem('div', 'eyebrow', 'Minimality'));
   head.appendChild(
     elem('span', 'pill-time', `${result.stats.routes_expanded || result.stats.expanded_routes.length}/${state.network.routes.length} routes`)
   );
@@ -1538,33 +1657,33 @@ function renderProof() {
     const deepest = Math.max(0, ...layers.map((layer) => layer.buses));
     if (!state.stopSet.has(result.source)) {
       note.appendChild(document.createTextNode('The source '));
-      note.appendChild(elem('b', null, result.source));
+      note.appendChild(elem('b', null, pretty(result.source)));
       note.appendChild(
         document.createTextNode(' is not served by any route, so there is nothing to explore.')
       );
     } else {
-      note.appendChild(document.createTextNode('BFS drained all '));
+      note.appendChild(document.createTextNode('BFS settled all '));
       note.appendChild(elem('b', null, formatCount(result.stats.stops_reached)));
-      note.appendChild(document.createTextNode(' reachable stops without finding '));
-      note.appendChild(elem('b', null, result.destination));
+      note.appendChild(document.createTextNode(' reachable stops; '));
+      note.appendChild(elem('b', null, pretty(result.destination)));
       note.appendChild(
         document.createTextNode(
-          `. The active component ends at layer ${deepest}, so no open-route journey exists.`
+          ` never appears. The active component ends at layer ${deepest}, so no open-route journey exists.`
         )
       );
     }
   } else if (result.buses === 0) {
-    note.appendChild(document.createTextNode('Source equals destination. '));
+    note.appendChild(document.createTextNode('The origin is the destination. '));
     note.appendChild(elem('b', null, 'Zero'));
     note.appendChild(
-      document.createTextNode(' is the smallest possible bus count, so the answer is trivially minimal.')
+      document.createTextNode(' is the smallest possible count, so the answer is trivially minimal.')
     );
   } else {
     note.appendChild(document.createTextNode('The destination first appears in layer '));
     note.appendChild(elem('b', null, String(result.buses)));
     note.appendChild(
       document.createTextNode(
-        `. Layers 0–${result.buses - 1} hold every stop reachable with fewer buses, and it is in none of them — so no shorter journey can exist.`
+        `. Every stop reachable with fewer buses is in layers 0–${result.buses - 1}, and it is not one of them.`
       )
     );
   }
@@ -1601,7 +1720,7 @@ function renderResilience() {
 
   const card = elem('div', 'card');
   const head = elem('div', 'card-head');
-  head.appendChild(elem('div', 'eyebrow', 'Closure sweep'));
+  head.appendChild(elem('div', 'eyebrow', 'Route closures'));
   head.appendChild(
     elem('span', 'pill-time', `${state.network.routes.length} routes`)
   );
@@ -1612,10 +1731,10 @@ function renderResilience() {
     elem(
       'p',
       null,
-      'Close every route in turn and re-query. One index, many searches — the requirement made visible.'
+      'Close each route in turn and re-run this query. Shows which routes this pair depends on.'
     )
   );
-  const button = elem('button', 'sweep-btn', 'Run sweep');
+  const button = elem('button', 'sweep-btn', 'Test closures');
   top.appendChild(button);
   card.appendChild(top);
 
@@ -1624,7 +1743,7 @@ function renderResilience() {
 
   button.addEventListener('click', async () => {
     button.disabled = true;
-    button.textContent = 'Sweeping…';
+    button.textContent = 'Testing…';
     try {
       const data = await api('/api/impact', {
         source: result.source,
@@ -1637,7 +1756,7 @@ function renderResilience() {
       body.appendChild(elem('p', 'field-error', error.message));
     } finally {
       button.disabled = false;
-      button.textContent = 'Run sweep';
+      button.textContent = 'Test closures';
     }
   });
 
@@ -1645,7 +1764,7 @@ function renderResilience() {
     renderImpactRows(body, state.impact);
   } else {
     body.appendChild(
-      elem('p', 'micro', 'Answers which routes are critical for this pair — a transit planner question, not a graph exercise.')
+      elem('p', 'micro', 'One index, one query per route — the repeat-query requirement made visible.')
     );
   }
 
@@ -1751,9 +1870,9 @@ function renderLog() {
   for (const entry of state.log) {
     const row = elem('button', 'log-row');
     const pair = elem('span', 'log-pair');
-    pair.appendChild(document.createTextNode(entry.source));
+    pair.appendChild(document.createTextNode(pretty(entry.source)));
     pair.appendChild(elem('span', 'arrow', '→'));
-    pair.appendChild(document.createTextNode(entry.destination));
+    pair.appendChild(document.createTextNode(pretty(entry.destination)));
     row.appendChild(pair);
     row.appendChild(
       elem('span', 'log-result' + (entry.found ? '' : ' none'), entry.found ? `${entry.buses}` : 'none')
@@ -1925,7 +2044,7 @@ function updateNetworkPanels() {
     }
   }
   $('#chipName').textContent = name;
-  $('#chipMeta').textContent = `${routes} routes · ${formatCount(stops)} stops · ${formatCount(appearances)} appearances`;
+  $('#chipMeta').textContent = `${routes} routes · ${formatCount(stops)} stops`;
   $('#openNetwork').title = `Change network · ${name}`;
 
   const datalist = $('#stopList');
@@ -1936,6 +2055,7 @@ function updateNetworkPanels() {
   for (const stop of sorted) {
     const option = document.createElement('option');
     option.value = stop;
+    option.label = pretty(stop);
     datalist.appendChild(option);
   }
 }
@@ -1947,8 +2067,8 @@ function renderQuickPairs() {
   for (const pair of pairs) {
     const label =
       pair.inactive.length > 0
-        ? `${pair.source} → ${pair.destination} −${pair.inactive.join(',')}`
-        : `${pair.source} → ${pair.destination}`;
+        ? `${pretty(pair.source)} → ${pretty(pair.destination)} −${pair.inactive.join(',')}`
+        : `${pretty(pair.source)} → ${pretty(pair.destination)}`;
     const chip = elem('button', 'quick-pair', label);
     chip.addEventListener('click', () => {
       setPair(pair.source, pair.destination, pair.inactive);
@@ -1975,12 +2095,15 @@ function renderQuickPairs() {
 
 function renderDemoPairs() {
   const host = $('#demoPairs');
+  if (!host) {
+    return;
+  }
   clear(host);
   for (const pair of state.queries.slice(0, 3)) {
     const button = elem('button', 'demo-pair');
-    const left = elem('span', null, `${pair.source}`);
+    const left = elem('span', null, pretty(pair.source));
     const arrow = elem('span', 'dp-arrow', '→');
-    const right = elem('span', null, `${pair.destination}`);
+    const right = elem('span', null, pretty(pair.destination));
     const meta = elem(
       'span',
       'dp-route',
@@ -2013,6 +2136,11 @@ async function installNetwork(name, routes, options) {
   const data = await api('/api/build', { name, routes });
   state.network = { name: data.name, routes: data.routes };
   state.queries = opts.queries || [];
+  state.geo = opts.geo || null;
+  state.geoHubs = new Set(
+    ((opts.geo && opts.geo.hubs) || []).map((hub) => hub.stop)
+  );
+  state.geoHull = null;
   indexNetwork();
   layoutNetwork();
   state.closed = new Set();
@@ -2043,9 +2171,18 @@ async function loadSample(file, options) {
   }
   const text = await response.text();
   const parsed = parseNetworkText(text);
+  const entry = SAMPLES.find((item) => item.file === file);
+  let geo = null;
+  if (entry && entry.geo) {
+    const geoResponse = await fetch(entry.geo);
+    if (geoResponse.ok) {
+      geo = await geoResponse.json();
+    }
+  }
   await installNetwork(file, parsed.routes, {
     queries: parsed.queries,
     sampleFile: file,
+    geo,
   });
 
   if (opts.auto !== false) {
