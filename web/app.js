@@ -75,6 +75,8 @@ const state = {
   hoveredRoute: null,
   journeyPaths: [],
   raf: 0,
+  pointers: new Map(),
+  pinch: null,
   drag: null,
   dragged: false,
   queryToken: 0,
@@ -2464,28 +2466,92 @@ function bindEvents() {
   }, { passive: false });
 
   svg.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
-    state.dragged = false;
-    state.drag = {
+    state.pointers.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
-      vx: state.view.x,
-      vy: state.view.y,
-    };
-    svg.setPointerCapture(event.pointerId);
-    svg.classList.add('dragging');
+      type: event.pointerType,
+    });
+    if (state.pointers.size === 1) {
+      state.dragged = false;
+      state.pinch = null;
+      state.drag = {
+        x: event.clientX,
+        y: event.clientY,
+        vx: state.view.x,
+        vy: state.view.y,
+        type: event.pointerType,
+      };
+    } else if (state.pointers.size === 2) {
+      const pts = Array.from(state.pointers.values());
+      const rect = svg.getBoundingClientRect();
+      state.drag = null;
+      state.dragged = true;
+      state.pinch = {
+        mx: (pts[0].x + pts[1].x) / 2 - rect.left,
+        my: (pts[0].y + pts[1].y) / 2 - rect.top,
+        dist: Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y),
+        vx: state.view.x,
+        vy: state.view.y,
+        vk: state.view.k,
+      };
+      svg.classList.add('dragging');
+    }
   });
 
   svg.addEventListener('pointermove', (event) => {
-    if (!state.drag) {
+    if (!state.pointers.has(event.pointerId)) {
+      return;
+    }
+    state.pointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+      type: event.pointerType,
+    });
+
+    if (state.pointers.size === 2 && state.pinch) {
+      const pts = Array.from(state.pointers.values());
+      const rect = svg.getBoundingClientRect();
+      const cx = (pts[0].x + pts[1].x) / 2 - rect.left;
+      const cy = (pts[0].y + pts[1].y) / 2 - rect.top;
+      const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+      if (state.pinch.dist > 0) {
+        const next = Math.min(
+          6,
+          Math.max(0.15, state.pinch.vk * (dist / state.pinch.dist))
+        );
+        const ratio = next / state.pinch.vk;
+        state.view.x = cx - (state.pinch.mx - state.pinch.vx) * ratio;
+        state.view.y = cy - (state.pinch.my - state.pinch.vy) * ratio;
+        state.view.k = next;
+        applyView();
+      }
+      return;
+    }
+
+    if (state.pointers.size !== 1 || !state.drag) {
       return;
     }
     const dx = event.clientX - state.drag.x;
     const dy = event.clientY - state.drag.y;
-    if (Math.abs(dx) + Math.abs(dy) > 4) {
+    // Larger slop for touch prevents minor finger drift from panning on tap.
+    const slop =
+      state.drag.type === 'touch' || event.pointerType === 'touch' ? 10 : 4;
+    if (!state.dragged) {
+      if (Math.hypot(dx, dy) <= slop) {
+        return;
+      }
       state.dragged = true;
+      svg.classList.add('dragging');
+      if (!svg.hasPointerCapture(event.pointerId)) {
+        try {
+          svg.setPointerCapture(event.pointerId);
+        } catch (err) {
+          // Ignore if pointer already ended.
+        }
+      }
     }
     state.view.x = state.drag.vx + dx;
     state.view.y = state.drag.vy + dy;
@@ -2493,13 +2559,38 @@ function bindEvents() {
   });
 
   const endDrag = (event) => {
-    if (!state.drag) {
-      return;
+    state.pointers.delete(event.pointerId);
+    if (
+      event.pointerId !== undefined &&
+      svg.hasPointerCapture(event.pointerId)
+    ) {
+      try {
+        svg.releasePointerCapture(event.pointerId);
+      } catch (err) {
+        // Ignore capture release errors on cancel.
+      }
     }
-    state.drag = null;
-    svg.classList.remove('dragging');
-    if (event.pointerId !== undefined && svg.hasPointerCapture(event.pointerId)) {
-      svg.releasePointerCapture(event.pointerId);
+    if (state.pointers.size < 2) {
+      const wasPinch = Boolean(state.pinch);
+      state.pinch = null;
+      if (state.pointers.size === 1) {
+        const remaining = Array.from(state.pointers.values())[0];
+        state.drag = {
+          x: remaining.x,
+          y: remaining.y,
+          vx: state.view.x,
+          vy: state.view.y,
+          type: remaining.type,
+        };
+        if (wasPinch) {
+          state.dragged = true;
+        }
+        return;
+      }
+    }
+    if (state.pointers.size === 0) {
+      state.drag = null;
+      svg.classList.remove('dragging');
     }
   };
   svg.addEventListener('pointerup', endDrag);

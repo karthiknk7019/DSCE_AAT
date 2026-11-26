@@ -47,7 +47,7 @@ Implemented and manually verified (2026-11-26):
 - [x] closure sweep: one re-query per route on the same index
 - [x] recent queries, shareable URL hash for samples
 - [x] network dialog: four samples + paste an unseen network
-- [x] responsive down to ~760 px; no horizontal overflow
+- [x] responsive down to ~390 px with touch pinch-zoom, tap-slop pan guard, and larger touch tap targets (**U8**)
 - [x] hover a route in the list to highlight its path on the map (`.route-hover`, **U3**)
 - [x] run all parsed `query` lines sequentially and show a clickable result table (**U4**)
 - [x] `make ui-test` API smoke; screenshots in `docs/wayfinder*.png`
@@ -181,7 +181,7 @@ in `docs/TASKS.md`, and put your name in the PR title.
 | U5 | Route tooltip when hovering a path | S | Role 3 | tooltip shows name + stop count + open/closed |
 | U6 | Browser automation for the 6-step demo | M | Role 3 | one command reproduces Act 2c; screenshots on failure |
 | U7 | Accessibility pass | M | anyone | keyboard focus visible, dialog labelled, colour not the only signal, axe clean |
-| U8 | Touch pinch-zoom and larger tap targets | M | Role 2 | usable at 390 px wide; no accidental pan on tap |
+| U8 | ~~Touch pinch-zoom and larger tap targets~~ **done by Role 2** | M | Role 2 | usable at 390 px wide; no accidental pan on tap |
 | U9 | Persist a pasted network in `localStorage` | S | Role 3 | reload restores name + routes; "clear" removes it |
 
 ### P2 — nice, not required

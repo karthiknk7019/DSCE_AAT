@@ -64,6 +64,7 @@ textarea {
 
 button {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 h2,
@@ -81,6 +82,8 @@ p {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* ---------------------------------------------------------------- top bar */
@@ -2019,7 +2022,46 @@ dialog::backdrop {
     gap: 10px;
   }
   .stage {
-    height: 480px;
+    height: 440px;
+  }
+  .stage-bar {
+    height: auto;
+    min-height: 47px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+  }
+  .stage-hint {
+    display: none;
+  }
+  .icon-btn {
+    height: 36px;
+    min-width: 36px;
+    padding: 0 9px;
+  }
+  .seg button {
+    min-height: 34px;
+    padding: 6px 10px;
+  }
+  .primary {
+    min-height: 44px;
+  }
+  .swap-btn {
+    width: 38px;
+    height: 38px;
+  }
+  .clear-input {
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .quick-pair {
+    min-height: 34px;
+    padding: 6px 10px;
+  }
+  .route-row,
+  .batch-row,
+  .log-row {
+    min-height: 40px;
+    padding: 8px 10px;
   }
   .topbar-right .live-pill {
     display: none;
@@ -2036,6 +2078,31 @@ dialog::backdrop {
   }
   .map-hint {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .stage {
+    height: 380px;
+  }
+  .panel {
+    padding: 12px;
+  }
+}
+
+@media (pointer: coarse) {
+  .icon-btn {
+    min-width: 38px;
+    height: 38px;
+  }
+  .route-row,
+  .batch-row,
+  .log-row {
+    min-height: 40px;
   }
 }
 
