@@ -164,7 +164,7 @@ void test_minimum_buses_not_minimum_stops() {
 void test_inactive_route_not_needed() {
   journey::Network net = example_network();
   expect_journey(net, "1", "2", {"R2"}, 1u, "case 8: R2 closed, R1 enough");
-  expect_journey(net, "A", "F", {"Hop1", "Hop2", "Hop3"}, 2u,
+  expect_journey(demo_network(), "A", "F", {"Hop1", "Hop2", "Hop3"}, 2u,
                  "case 8: only Outer/Outer2 left");
 }
 
