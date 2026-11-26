@@ -1,9 +1,8 @@
 // Role 1 owns this file. Do not edit it if you are Role 2 or Role 3.
-#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "journey.hpp"
@@ -11,31 +10,31 @@
 namespace journey {
 namespace {
 
-// Hand-written circular queue of stop names (Module 2: queue ADT).
-// The capacity is the number of distinct stops, and a stop is enqueued at
+// Hand-written circular queue of compact stop IDs (Module 2: queue ADT).
+// Capacity equals the number of distinct stops, and each stop is enqueued at
 // most once per query, so the ring can never overflow.
-class StopQueue {
+class IntQueue {
  public:
-  explicit StopQueue(std::size_t capacity)
+  explicit IntQueue(std::size_t capacity)
       : data_(capacity == 0 ? 1 : capacity) {}
 
   bool empty() const { return size_ == 0; }
 
-  void push(const std::string& stop) {
-    data_[tail_] = stop;
+  void push(int id) {
+    data_[tail_] = id;
     tail_ = (tail_ + 1) % data_.size();
     ++size_;
   }
 
-  std::string pop() {
-    std::string stop = data_[head_];
+  int pop() {
+    const int id = data_[head_];
     head_ = (head_ + 1) % data_.size();
     --size_;
-    return stop;
+    return id;
   }
 
  private:
-  std::vector<std::string> data_;
+  std::vector<int> data_;
   std::size_t head_ = 0;
   std::size_t tail_ = 0;
   std::size_t size_ = 0;
@@ -51,7 +50,11 @@ Network build_network(const std::vector<Route>& routes) {
   network.routes = routes;
   for (int r = 0; r < static_cast<int>(network.routes.size()); ++r) {
     for (const std::string& stop : network.routes[r].stops) {
-      network.stop_to_routes[stop].push_back(r);
+      std::vector<int>& list = network.stop_to_routes[stop];
+      // A route may list a stop twice; store each route index once per stop.
+      if (list.empty() || list.back() != r) {
+        list.push_back(r);
+      }
     }
   }
   return network;
@@ -81,27 +84,45 @@ bool find_journey(const Network& network, const std::string& source,
     return true;
   }
 
-  if (network.stop_to_routes.find(source) == network.stop_to_routes.end()) {
+  if (network.stop_to_routes.find(source) == network.stop_to_routes.end() ||
+      network.stop_to_routes.find(destination) ==
+          network.stop_to_routes.end()) {
     return false;
   }
 
-  const std::unordered_set<std::string> inactive(inactive_routes.begin(),
-                                                 inactive_routes.end());
+  std::unordered_map<std::string, char> inactive;
+  if (!inactive_routes.empty()) {
+    inactive.reserve(inactive_routes.size());
+    for (const std::string& name : inactive_routes) {
+      inactive[name] = 1;
+    }
+  }
 
-  std::unordered_map<std::string, int> buses_used;  // stop -> boardings
-  std::unordered_map<std::string, std::string> parent_stop;
-  std::unordered_map<std::string, int> parent_route;
+  // Assign each visited stop a compact integer ID so the queue and parent
+  // arrays avoid repeated string hashing and string copies.
+  std::unordered_map<std::string, int> stop_to_id;
+  const std::size_t hint =
+      network.stop_to_routes.size() < 512 ? network.stop_to_routes.size() : 512;
+  stop_to_id.reserve(hint);
+
+  std::vector<const std::string*> id_to_name;
+  std::vector<int> parent_stop;
+  std::vector<int> parent_route;
   std::vector<char> route_expanded(network.routes.size(), 0);
 
-  StopQueue queue(network.stop_to_routes.size());
-  buses_used[source] = 0;
-  queue.push(source);
+  const auto src_it = stop_to_id.emplace(source, 0).first;
+  id_to_name.push_back(&src_it->first);
+  parent_stop.push_back(-1);
+  parent_route.push_back(-1);
+
+  IntQueue queue(network.stop_to_routes.size());
+  queue.push(0);
 
   while (!queue.empty()) {
-    const std::string stop = queue.pop();
-    const int boarded = buses_used[stop];
+    const int stop_id = queue.pop();
+    const std::string& stop_name = *id_to_name[static_cast<std::size_t>(stop_id)];
 
-    const auto routes_it = network.stop_to_routes.find(stop);
+    const auto routes_it = network.stop_to_routes.find(stop_name);
     if (routes_it == network.stop_to_routes.end()) {
       continue;
     }
@@ -113,33 +134,41 @@ bool find_journey(const Network& network, const std::string& source,
       route_expanded[route_index] = 1;
 
       const Route& route = network.routes[route_index];
-      if (inactive.find(route.name) != inactive.end()) {
+      if (!inactive.empty() && inactive.find(route.name) != inactive.end()) {
         continue;
       }
 
       for (const std::string& next : route.stops) {
-        if (buses_used.find(next) != buses_used.end()) {
+        const int next_id = static_cast<int>(id_to_name.size());
+        const auto [it, inserted] = stop_to_id.emplace(next, next_id);
+        if (!inserted) {
           continue;
         }
 
         // One more bus, no matter how many stops this route crosses.
-        buses_used[next] = boarded + 1;
-        parent_stop[next] = stop;
-        parent_route[next] = route_index;
+        id_to_name.push_back(&it->first);
+        parent_stop.push_back(stop_id);
+        parent_route.push_back(route_index);
 
         if (next == destination) {
-          std::string current = destination;
-          while (current != source) {
+          int cur = next_id;
+          while (cur != 0) {
+            const std::size_t cur_idx = static_cast<std::size_t>(cur);
+            const int prev = parent_stop[cur_idx];
+            const int r_idx = parent_route[cur_idx];
             out.legs.push_back(
-                {network.routes[parent_route.at(current)].name,
-                 parent_stop.at(current), current});
-            current = parent_stop.at(current);
+                {network.routes[r_idx].name,
+                 *id_to_name[static_cast<std::size_t>(prev)],
+                 *id_to_name[cur_idx]});
+            cur = prev;
           }
-          std::reverse(out.legs.begin(), out.legs.end());
+          for (std::size_t l = 0, r = out.legs.size(); l + 1 < r; ++l, --r) {
+            std::swap(out.legs[l], out.legs[r - 1]);
+          }
           return true;
         }
 
-        queue.push(next);
+        queue.push(next_id);
       }
     }
   }
