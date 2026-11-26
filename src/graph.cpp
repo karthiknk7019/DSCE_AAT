@@ -40,6 +40,75 @@ class IntQueue {
   std::size_t size_ = 0;
 };
 
+// 64-bit FNV-1a hash for stop names (Module 5: hashing).
+std::size_t hash_stop(const std::string& s) {
+  std::size_t h = 14695981039346656037ULL;
+  for (unsigned char ch : s) {
+    h ^= ch;
+    h *= 1099511628211ULL;
+  }
+  return h;
+}
+
+// Hand-written open-addressing hash table mapping stop name -> compact ID.
+// Keys are non-owning pointers into `network.routes` or `source`, avoiding
+// string copies during BFS.
+class StopIdMap {
+ public:
+  explicit StopIdMap(std::size_t initial_cap = 64) {
+    std::size_t cap = 64;
+    while (cap < initial_cap * 2) {
+      cap *= 2;
+    }
+    slots_.resize(cap);
+  }
+
+  // Inserts `key` with `new_id` if absent; returns true if inserted.
+  bool insert_if_absent(const std::string& key, int new_id) {
+    if (size_ * 2 >= slots_.size()) {
+      rehash(slots_.size() * 2);
+    }
+    const std::size_t h = hash_stop(key);
+    const std::size_t mask = slots_.size() - 1;
+    std::size_t idx = h & mask;
+    while (slots_[idx].key != nullptr) {
+      if (slots_[idx].hash == h && *slots_[idx].key == key) {
+        return false;
+      }
+      idx = (idx + 1) & mask;
+    }
+    slots_[idx] = {&key, h, new_id};
+    ++size_;
+    return true;
+  }
+
+ private:
+  struct Slot {
+    const std::string* key = nullptr;
+    std::size_t hash = 0;
+    int id = -1;
+  };
+
+  void rehash(std::size_t new_cap) {
+    std::vector<Slot> next(new_cap);
+    const std::size_t mask = new_cap - 1;
+    for (const Slot& s : slots_) {
+      if (s.key == nullptr) {
+        continue;
+      }
+      std::size_t idx = s.hash & mask;
+      while (next[idx].key != nullptr) {
+        idx = (idx + 1) & mask;
+      }
+      next[idx] = s;
+    }
+    slots_.swap(next);
+  }
+
+  std::vector<Slot> slots_;
+  std::size_t size_ = 0;
+};
+
 }  // namespace
 
 // The index below is intentionally simple: for every stop it records which
@@ -98,20 +167,19 @@ bool find_journey(const Network& network, const std::string& source,
     }
   }
 
-  // Assign each visited stop a compact integer ID so the queue and parent
-  // arrays avoid repeated string hashing and string copies.
-  std::unordered_map<std::string, int> stop_to_id;
+  // Assign each visited stop a compact integer ID using a hand-written
+  // open-addressing hash table, avoiding extra hash maps and string copies.
   const std::size_t hint =
       network.stop_to_routes.size() < 512 ? network.stop_to_routes.size() : 512;
-  stop_to_id.reserve(hint);
+  StopIdMap visited(hint);
 
   std::vector<const std::string*> id_to_name;
   std::vector<int> parent_stop;
   std::vector<int> parent_route;
   std::vector<char> route_expanded(network.routes.size(), 0);
 
-  const auto src_it = stop_to_id.emplace(source, 0).first;
-  id_to_name.push_back(&src_it->first);
+  visited.insert_if_absent(source, 0);
+  id_to_name.push_back(&source);
   parent_stop.push_back(-1);
   parent_route.push_back(-1);
 
@@ -140,13 +208,12 @@ bool find_journey(const Network& network, const std::string& source,
 
       for (const std::string& next : route.stops) {
         const int next_id = static_cast<int>(id_to_name.size());
-        const auto [it, inserted] = stop_to_id.emplace(next, next_id);
-        if (!inserted) {
+        if (!visited.insert_if_absent(next, next_id)) {
           continue;
         }
 
         // One more bus, no matter how many stops this route crosses.
-        id_to_name.push_back(&it->first);
+        id_to_name.push_back(&next);
         parent_stop.push_back(stop_id);
         parent_route.push_back(route_index);
 

@@ -29,13 +29,15 @@ on the machine you will demo from — an evaluator may ask for it.
 
 | Date | Machine | Run | Result |
 |---|---|---|---|
-| | | 100 queries / 400 routes / 40,000 appearances | ___ ms (limit 1000 ms) |
+| 2026-11-26 | Windows x86_64 (g++ -O2) | 100 queries / 400 routes / 40,000 appearances | 19 ms (limit 1000 ms) |
 
 ## Template for new rows
 
 | # | Decision | Why | Alternative rejected | Owner |
 |---|---|---|---|---|
-| 17 | | | | |
+| 17 | Compact integer stop IDs + `IntQueue` in `find_journey` | Avoids per-stop string copies and extra hash maps during BFS | String-keyed `buses_used` / `parent_*` maps + `StopQueue` of `std::string` | Role 1 |
+| 18 | Hand-written open-addressing `StopIdMap` (FNV-1a + linear probing) for BFS visited stops | Flat contiguous slots with non-owning `const std::string*` keys; makes Module-5 hashing explicit | `std::unordered_map<std::string, int>` node allocations per visited stop | Role 1 |
+| 19 | Stop-by-stop route trace and transfer summary in `--interactive` mode only | Shows intermediate stops, total stops, and transfer points for demos/UI without breaking byte-exact batch stdout | Changing batch `run_cli` stdout format (breaks `CONTRACT.md` & `smoke.sh`) | Role 2 |
 
 ## How to use this in the demo
 
