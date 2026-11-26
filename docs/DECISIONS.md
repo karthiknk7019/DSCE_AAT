@@ -35,6 +35,11 @@ same PR that makes the choice. "Why" is the part you say out loud in the viva.
 | 28 | Pointer-map pan/pinch with a 10 px touch tap-slop (`state.pointers`) and deferred pointer capture | Prevents minor finger drift on tap from panning the map or swallowing stop `click` events, while supporting two-finger pinch-zoom | Capturing pointer immediately on `pointerdown` with a 4 px threshold | Role 2 |
 | 29 | Global `:focus-visible` rings, explicit `<label>`/`aria-labelledby`, `closed` text badge, dashed destination ring, and `--dim: #8a9bb5` | Makes keyboard focus, dialog titles, open/closed routes, origin/destination endpoints, and secondary text accessible without relying on colour alone | Suppressing browser outlines or leaving `#5d6d87` low-contrast labels | Role 2 |
 | 30 | Dense-map stop search (`#stopSearch` ARIA combobox + `#focusOverlay` `<g>` layer) | Lets users jump to any stop on 2,000+ dot maps via keyboard (`F`, arrows, `Enter`) and updates only `#focusOverlay` instead of redrawing all SVG nodes | Re-rendering the entire SVG map on stop selection or relying only on `<datalist>` in From/To | Role 2 |
+| 31 | A **real BMTC sample** (`samples/bmtc.txt`) alongside the synthetic ones | Real stop names carry the demo; the graph is still ordinary contract input, so the algorithm is unchanged | Synthetic-only samples — safe but forgettable | UI / Role 3 |
+| 32 | Busiest 400 route numbers, one direction each, longer pattern | Fits 400 routes and 12,325 appearances; keeps the recognisable services and city coverage | All 4,895 route numbers — exceeds the contract; random 400 — poor coverage | Role 3 |
+| 33 | Stop names become tokens; original names live in `bmtc.json` | The frozen grammar splits on whitespace, but the UI should show "Kempegowda Bus Station" | Change the grammar to quoted names — breaks the frozen contract | Role 2 / UI |
+| 34 | Routes stay undirected even though GTFS has UP/DOWN patterns | The problem statement explicitly allows riding against the listed order; one name per route fits the contract | Duplicate routes with `_UP`/`_DOWN` — halves unique services | Role 1 |
+| 35 | No map tiles or third-party map library; real coordinates + local projection | Works offline and keeps the build dependency-free; attribution is a caption | Leaflet/OSM tiles — network dependency and extra licence surface | UI |
 
 ## Perf log
 

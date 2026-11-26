@@ -57,7 +57,7 @@ it is not part of `make`, so the graded build stays dependency-free. Use
 | Closure sweep | Closes every route in turn and re-queries; reports which closures strand the passenger and which add buses. One index, N searches. |
 | Batch queries | Runs all `query` lines parsed from a loaded or pasted file sequentially against the same index and renders a clickable result table. |
 | Recent queries | Every query is clickable; the URL hash is shareable for sample networks. |
-| Network dialog | Four checked-in samples, or paste any network in the contract grammar. |
+| Network dialog | Five checked-in samples (including real BMTC), or paste any network in the contract grammar. |
 
 The interactive CLI (`--interactive`) additionally shows each leg's stop-by-stop
 sequence, the total stops crossed, and all transfer (change) points — the same

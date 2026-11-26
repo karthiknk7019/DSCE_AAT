@@ -85,12 +85,20 @@ Input format and exact output: [docs/CONTRACT.md](docs/CONTRACT.md).
 | `samples/example1.txt` | the problem statement's illustrative example |
 | `samples/demo.txt` | 2 buses / 10 stops beats 3 buses / 4 stops |
 | `samples/city.txt` | small Bengaluru-style network with named stops |
+| `samples/bmtc.txt` | **real BMTC**: 400 busiest services, 2,175 stops, 12,325 appearances, from the open GTFS (ODbL) |
 | `samples/city-large.txt` | 400 routes, 34,903 stop appearances, 2,001 numeric stops, 100 queries |
 | `samples/expected-*.txt` | exact stdout for each sample |
 
 Stops and route names are arbitrary tokens, so numeric IDs (`1`..`2000`) work
 exactly like names. `make gen` writes a separate 400-route / 40,000-appearance
 stress input to `samples/big.txt` (gitignored) for performance runs.
+
+`samples/bmtc.txt` is generated from the open BMTC GTFS with
+`tools/import_bmtc.py`; its stop coordinates and pretty display names live in
+`web/data/bmtc.json`. Data: [Vonter/bmtc-gtfs](https://github.com/Vonter/bmtc-gtfs),
+ODbL 1.0. See [docs/REAL-DATA.md](docs/REAL-DATA.md).
+
+![400 real BMTC services on their real stop coordinates](docs/bmtc-map.png)
 
 ## Repo map
 
@@ -142,6 +150,7 @@ Work is parallel, not sequential — but these are the real dependencies:
 | [docs/CONTRACT.md](docs/CONTRACT.md) | input/output spec and API semantics — **read first** |
 | [docs/UI.md](docs/UI.md) | the browser front-end: API, BFS layer view, demo path |
 | [docs/UI-ROLES.md](docs/UI-ROLES.md) | UI ownership, architecture, extension recipes, backlog |
+| [docs/REAL-DATA.md](docs/REAL-DATA.md) | real BMTC sample: source, licence, conversion, regeneration |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | current state, verification commands, known gaps |
 | [docs/ROLES.md](docs/ROLES.md) | what each role builds, step by step |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | branches, PRs, reviews, AI rules |

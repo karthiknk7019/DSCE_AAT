@@ -8,7 +8,7 @@ GEN_BIN  := $(BUILD)/gen_network
 
 CORE_SRC := src/graph.cpp src/cli.cpp src/server.cpp
 
-.PHONY: all run serve test ui-test gen clean
+.PHONY: all run serve test ui-test gen data real-check clean
 
 all: $(BIN)
 
@@ -39,6 +39,18 @@ ui-test: $(BIN)
 gen: $(GEN_BIN)
 	./$(GEN_BIN) > samples/big.txt
 	@echo "wrote samples/big.txt"
+
+# Regenerates the real BMTC sample from the open GTFS. Needs network the first
+# time (cached under /tmp); see docs/REAL-DATA.md.
+data: $(BIN)
+	python3 tools/import_bmtc.py
+	python3 tools/render_bmtc_svg.py
+	./$(BIN) < samples/bmtc.txt > samples/expected-bmtc.txt
+	python3 tools/check_bmtc.py
+	@echo "regenerated samples/bmtc.txt, docs/bmtc-map.svg and expected output"
+
+real-check:
+	python3 tools/check_bmtc.py
 
 clean:
 	rm -rf $(BUILD)
