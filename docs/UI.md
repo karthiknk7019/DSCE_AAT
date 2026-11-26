@@ -34,6 +34,18 @@ dependencies beyond POSIX sockets. The batch mode is untouched:
 ./build/journey < samples/example1.txt
 ```
 
+### Automated demo check (optional)
+
+```bash
+bash tools/ui_demo_check.sh
+```
+
+This drives Act 2c steps 1–6 in headless Chromium against a private port and
+writes a screenshot to `build/ui-demo/` on failure. It needs Playwright once
+(`python3 -m pip install playwright && python3 -m playwright install chromium`);
+it is not part of `make`, so the graded build stays dependency-free. Use
+`--headed` to watch it or `--web DIR` to check a pristine checkout.
+
 ## What is on screen
 
 | Area | What it shows |
