@@ -1,0 +1,22 @@
+# Fictional Bengaluru bus network for the live demo.
+# Route numbers are invented; stop names are real places.
+# Format: routes <n>, then <route> <k> <stop...>, then any number of queries.
+routes 7
+365 6 Majestic KRMarket Lalbagh Jayanagar BTM SilkBoard
+500 6 SilkBoard Koramangala Domlur MGRoad Indiranagar Marathahalli
+V1 5 Majestic MGRoad Domlur Marathahalli Whitefield
+401 3 Majestic Yeshwanthpur Hebbal
+402 3 Hebbal Indiranagar Koramangala
+210 4 Banashankari Jayanagar Lalbagh Majestic
+333 3 Rajajinagar Majestic KRMarket
+
+# Jayanagar -> Whitefield: 2 buses (365 to Majestic, V1 to Whitefield).
+# Closing V1 makes Whitefield unreachable.
+query Jayanagar Whitefield
+
+# Close V1: Whitefield is now unreachable.
+query Jayanagar Whitefield V1
+
+query Banashankari Indiranagar
+query Rajajinagar Koramangala
+query Majestic Majestic

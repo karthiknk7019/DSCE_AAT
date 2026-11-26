@@ -59,8 +59,8 @@ JOURNEY 1 buses
 ```
 
 Say: "A → F has two tempting answers. The short-looking one is three buses:
-Hop1, Hop2, Hop3, four stops. The correct answer is two buses: Outer across
-seven stops, then Outer2. A minimum-**stops** search would pick the three-bus
+Hop1, Hop2, Hop3, four stops. The correct answer is two buses: Outer then
+Outer2, ten distinct stops. A minimum-**stops** search would pick the three-bus
 path. We minimise boardings, so BFS layers are buses, not stops."
 
 Then point at the second query: "With Outer closed, the two-bus answer is gone
@@ -70,17 +70,21 @@ With Hop3 also closed it would print `NO JOURNEY`."
 ## Act 3 — It scales (Role 3)
 
 ```bash
-make gen                       # writes samples/big.txt (400 routes, 40k stops)
-time ./build/journey < samples/big.txt
+./build/journey < samples/city-large.txt | sed -n '1,12p'
+time ./build/journey < samples/city-large.txt > /dev/null
 ```
 
-Say: "400 routes, 40,000 stop appearances, heavy overlap, a hundred queries.
-The index is built once. Each route is expanded at most once per query, so the
-run stays proportional to the input instead of the product of routes and stops."
+Say: "This is a committed city dataset: 400 routes, 34,903 stop appearances,
+2,001 numeric stop IDs and 100 queries, including random closures. The first two
+answers are corner-to-corner journeys; the third reaches the satellite stop
+9999, which only B400 serves; the fourth closes B400 and correctly reports no
+journey. The whole run takes roughly 40 ms."
 
-Report the measured wall time out loud. On a laptop expect a few milliseconds;
-`make test` prints the same measurement and fails only above the deliberately
-loose 1 s limit.
+`make gen` still produces an even denser 40,000-appearance stress input
+(`samples/big.txt`) if an evaluator asks for the contract maximum. The point to
+say out loud: the index is built once, and each route is expanded at most once
+per query, so the run stays proportional to the input instead of the product of
+routes and stops.
 
 ## Act 4 — The tests are the spec (Role 3)
 

@@ -1,6 +1,6 @@
 # Demo network: the minimum-bus answer is NOT the minimum-stop answer.
 #
-# A -> F in 2 buses: Outer (A..M) then Outer2 (M..F) = 8 stops.
+# A -> F in 2 buses: Outer (A..M) then Outer2 (M..F) = 10 distinct stops.
 # The tempting 3-bus path Hop1 + Hop2 + Hop3 visits only 4 stops.
 # A minimum-stops search picks 3 buses; the correct minimum-bus answer is 2.
 routes 5

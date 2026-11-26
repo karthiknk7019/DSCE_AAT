@@ -20,7 +20,9 @@ fi
 
 status=0
 for pair in "samples/example1.txt:samples/expected1.txt" \
-            "samples/demo.txt:samples/expected-demo.txt"; do
+            "samples/demo.txt:samples/expected-demo.txt" \
+            "samples/city.txt:samples/expected-city.txt" \
+            "samples/city-large.txt:samples/expected-city-large.txt"; do
   input=${pair%%:*}
   expected=${pair##*:}
   if "$bin" < "$input" | diff -u "$expected" -; then

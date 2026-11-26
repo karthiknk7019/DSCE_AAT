@@ -1,0 +1,18 @@
+JOURNEY 2 buses
+  1: 365 Jayanagar -> Majestic
+  2: V1 Majestic -> Whitefield
+
+NO JOURNEY
+
+JOURNEY 3 buses
+  1: 210 Banashankari -> Jayanagar
+  2: 365 Jayanagar -> SilkBoard
+  3: 500 SilkBoard -> Indiranagar
+
+JOURNEY 3 buses
+  1: 333 Rajajinagar -> Majestic
+  2: 365 Majestic -> SilkBoard
+  3: 500 SilkBoard -> Koramangala
+
+JOURNEY 0 buses
+  already at Majestic

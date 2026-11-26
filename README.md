@@ -33,12 +33,27 @@ All three roles are equal in weight. Comment **mine** on that role's issue
 ## Quick start
 
 ```bash
-make          # build build/journey
-make run      # illustrative example (stub output until Role 2 lands)
-make test     # test suite (red until Role 1 lands the BFS)
+make                # build build/journey
+make run            # the problem statement's example
+make test           # 14-case matrix + perf check
+bash tools/smoke.sh # byte-exact diff for every sample
 ```
 
 Input format and exact output: [docs/CONTRACT.md](docs/CONTRACT.md).
+
+## Sample networks
+
+| File | What it is |
+|---|---|
+| `samples/example1.txt` | the problem statement's illustrative example |
+| `samples/demo.txt` | 2 buses / 10 stops beats 3 buses / 4 stops |
+| `samples/city.txt` | small Bengaluru-style network with named stops |
+| `samples/city-large.txt` | 400 routes, 34,903 stop appearances, 2,001 numeric stops, 100 queries |
+| `samples/expected-*.txt` | exact stdout for each sample |
+
+Stops and route names are arbitrary tokens, so numeric IDs (`1`..`2000`) work
+exactly like names. `make gen` writes a separate 400-route / 40,000-appearance
+stress input to `samples/big.txt` (gitignored) for performance runs.
 
 ## Repo map
 
@@ -94,8 +109,8 @@ Work is parallel, not sequential — but these are the real dependencies:
 
 - [x] Interface frozen, skeleton compiles (`make`)
 - [x] Sample + demo inputs and expected outputs
-- [x] Tests written for the problem statement's cases (red on purpose)
+- [x] Tests written for the problem statement's cases
 - [x] Role 1: minimum-bus BFS
-- [ ] Role 2: parser + output
-- [ ] Role 3: full test matrix + perf generator
+- [x] Role 2: parser + output
+- [x] Role 3: full test matrix + perf generator
 - [ ] Demo rehearsed by all three
