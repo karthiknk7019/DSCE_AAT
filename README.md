@@ -95,7 +95,7 @@ Work is parallel, not sequential — but these are the real dependencies:
 - [x] Interface frozen, skeleton compiles (`make`)
 - [x] Sample + demo inputs and expected outputs
 - [x] Tests written for the problem statement's cases (red on purpose)
-- [ ] Role 1: minimum-bus BFS
+- [x] Role 1: minimum-bus BFS
 - [ ] Role 2: parser + output
 - [ ] Role 3: full test matrix + perf generator
 - [ ] Demo rehearsed by all three

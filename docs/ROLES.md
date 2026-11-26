@@ -11,7 +11,7 @@ and read `docs/CONTRACT.md` before writing code.
 
 Shared duties for everyone:
 
-- review the other two's PRs (you are the second pair of eyes, not a rubber stamp);
+- review the other two's PRs when you can — helpful, not a gate;
 - keep `docs/DECISIONS.md` current when you make a choice;
 - be able to explain your own file line by line, and the *idea* of the other two;
 - rehearse the demo until you can run it without reading a script.

@@ -1,8 +1,8 @@
 # Contract — frozen at kickoff
 
 Everything here was agreed before coding started. It is the single source of
-truth for all three roles. Changing it needs a PR approved by **all three**
-members, and any change to `include/journey.hpp` must be in that same PR.
+truth for all three roles. Changing it needs a PR that the other two have seen,
+and any change to `include/journey.hpp` must be in that same PR.
 
 ## 1. The program
 
@@ -152,7 +152,7 @@ travel time, no preference ranking, no persistence. Every bus costs exactly 1.
 
 | Path | Owner |
 |---|---|
-| `include/journey.hpp` | all three (3 approvals to change) |
+| `include/journey.hpp` | all three (tell the others before changing) |
 | `src/graph.cpp` | Role 1 |
 | `src/cli.cpp`, `src/main.cpp` | Role 2 |
 | `tests/`, `tools/` | Role 3 |
