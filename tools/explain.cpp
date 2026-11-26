@@ -201,15 +201,49 @@ void explain(const Parsed& p, const Query& q) {
 }  // namespace
 
 int main(int argc, char** argv) {
-  if (argc < 4) {
-    std::cerr << "usage: explain <network-file> <from> <to> [closed-route ...]\n"
-                 "example: explain samples/city.txt Jayanagar Whitefield\n";
-    return 2;
+  std::string network_path = "samples/city.txt";
+  int argi = 1;
+  if (argc > 1 && argv[1][0] != '-') {
+    network_path = argv[1];
+    argi = 2;
   }
 
-  std::ifstream file(argv[1]);
+  Query q;
+  if (argc > argi) {
+    q.source = argv[argi++];
+  } else {
+    std::cout << "From: " << std::flush;
+    std::getline(std::cin, q.source);
+  }
+  if (argc > argi) {
+    q.destination = argv[argi++];
+  } else {
+    std::cout << "To:   " << std::flush;
+    std::getline(std::cin, q.destination);
+  }
+  if (q.source.empty() || q.destination.empty()) {
+    std::cerr << "need a source and a destination\n";
+    return 2;
+  }
+  if (argc > argi) {
+    for (; argi < argc; ++argi) {
+      q.inactive_routes.push_back(argv[argi]);
+    }
+  } else {
+    std::cout << "Closed routes (space separated, blank = none): "
+              << std::flush;
+    std::string line;
+    std::getline(std::cin, line);
+    std::istringstream ls(line);
+    std::string closed;
+    while (ls >> closed) {
+      q.inactive_routes.push_back(closed);
+    }
+  }
+
+  std::ifstream file(network_path);
   if (!file) {
-    std::cerr << "cannot open " << argv[1] << "\n";
+    std::cerr << "cannot open " << network_path << "\n";
     return 2;
   }
 
@@ -218,17 +252,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  Query q;
-  q.source = argv[2];
-  q.destination = argv[3];
-  for (int i = 4; i < argc; ++i) {
-    q.inactive_routes.push_back(argv[i]);
-  }
-
   std::cout << "Wayfinder - minimum-bus trace\n";
-  std::cout << "network: " << argv[1] << "  (" << parsed.network.routes.size()
-            << " routes, " << parsed.network.stop_to_routes.size()
-            << " stops, " << parsed.appearances << " appearances)\n";
+  std::cout << "network: " << network_path << "  ("
+            << parsed.network.routes.size() << " routes, "
+            << parsed.network.stop_to_routes.size() << " stops, "
+            << parsed.appearances << " appearances)\n";
 
   explain(parsed, q);
   return 0;
