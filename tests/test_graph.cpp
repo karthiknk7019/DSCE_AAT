@@ -339,6 +339,138 @@ void test_worst_case_performance() {
   CHECK_TRUE(elapsed_ms < 1000);
 }
 
+// Case 16: equal-bus ties pick the lexicographically smallest route sequence,
+// even when two stops on the same first route lead to different second routes.
+void test_lexicographical_tie_breaking() {
+  const journey::Network net = journey::build_network({
+      {"R_a", {"S", "X", "Y"}},
+      {"R_z", {"X", "T"}},
+      {"R_c", {"Y", "T"}},
+      {"R_b", {"S", "T"}},
+  });
+
+  journey::Journey j1;
+  CHECK_TRUE(journey::find_journey(net, "S", "T", {}, j1));
+  CHECK_EQ(j1.legs.size(), 1u);
+  if (j1.legs.size() == 1u) {
+    CHECK_EQ(j1.legs[0].route, std::string("R_b"));
+  }
+
+  journey::Journey j2;
+  CHECK_TRUE(journey::find_journey(net, "S", "T", {"R_b"}, j2));
+  CHECK_EQ(j2.legs.size(), 2u);
+  if (j2.legs.size() == 2u) {
+    CHECK_EQ(j2.legs[0].route, std::string("R_a"));
+    CHECK_EQ(j2.legs[1].route, std::string("R_c"));
+  }
+  CHECK_TRUE(journey_is_valid(net, "S", "T", {"R_b"}, j2));
+}
+
+// Independent brute-force oracle for tiny networks (<= 5 routes): enumerates
+// route sequences up to length n and returns the minimum-bus, lexicographically
+// smallest route sequence.
+void oracle_dfs(const journey::Network& net, const std::string& cur,
+                const std::string& dst,
+                const std::vector<std::string>& inactive,
+                std::vector<char>& used_route,
+                std::vector<std::string>& cur_seq,
+                std::vector<std::string>& best_seq, bool& found) {
+  if (found && cur_seq.size() >= best_seq.size()) {
+    return;
+  }
+  for (std::size_t r = 0; r < net.routes.size(); ++r) {
+    if (used_route[r] != 0) {
+      continue;
+    }
+    const journey::Route& route = net.routes[r];
+    if (!route_is_active(route.name, inactive) || !route_serves(route, cur)) {
+      continue;
+    }
+    cur_seq.push_back(route.name);
+    if (route_serves(route, dst)) {
+      if (!found || cur_seq.size() < best_seq.size() ||
+          (cur_seq.size() == best_seq.size() && cur_seq < best_seq)) {
+        best_seq = cur_seq;
+        found = true;
+      }
+      cur_seq.pop_back();
+      continue;
+    }
+    if (!found || cur_seq.size() + 1 <= best_seq.size()) {
+      used_route[r] = 1;
+      for (const std::string& next : route.stops) {
+        if (next != cur) {
+          oracle_dfs(net, next, dst, inactive, used_route, cur_seq, best_seq,
+                     found);
+        }
+      }
+      used_route[r] = 0;
+    }
+    cur_seq.pop_back();
+  }
+}
+
+// Case 17 (Role 3 stretch): fuzz 500 random tiny networks against the
+// independent brute-force oracle.
+void test_random_networks_against_oracle() {
+  unsigned long long state = 1357924680ULL;
+  auto next = [&state]() {
+    state = state * 6364136223846793005ULL + 1442695040888963407ULL;
+    return static_cast<unsigned>(state >> 33);
+  };
+
+  const int kTrials = 500;
+  for (int t = 0; t < kTrials; ++t) {
+    const int n_routes = 1 + static_cast<int>(next() % 5);
+    const int n_stops = 2 + static_cast<int>(next() % 5);
+    std::vector<journey::Route> routes;
+    routes.reserve(static_cast<std::size_t>(n_routes));
+    for (int r = 0; r < n_routes; ++r) {
+      journey::Route route;
+      route.name = "R" + std::to_string(r);
+      const int k = static_cast<int>(next() % 5);  // 0..4 stops (tests k=0 too)
+      for (int i = 0; i < k; ++i) {
+        route.stops.push_back("S" + std::to_string(next() % n_stops));
+      }
+      routes.push_back(route);
+    }
+
+    const journey::Network net = journey::build_network(routes);
+    const std::string src = "S" + std::to_string(next() % n_stops);
+    const std::string dst = "S" + std::to_string(next() % n_stops);
+    std::vector<std::string> inactive;
+    for (int r = 0; r < n_routes; ++r) {
+      if ((next() % 5) == 0) {
+        inactive.push_back("R" + std::to_string(r));
+      }
+    }
+
+    bool oracle_found = false;
+    std::vector<std::string> oracle_seq;
+    if (src == dst) {
+      oracle_found = true;
+    } else {
+      std::vector<char> used(static_cast<std::size_t>(n_routes), 0);
+      std::vector<std::string> cur_seq;
+      oracle_dfs(net, src, dst, inactive, used, cur_seq, oracle_seq,
+                 oracle_found);
+    }
+
+    journey::Journey actual;
+    const bool actual_found =
+        journey::find_journey(net, src, dst, inactive, actual);
+    CHECK_EQ(actual_found, oracle_found);
+    if (actual_found && oracle_found) {
+      CHECK_EQ(actual.legs.size(), oracle_seq.size());
+      CHECK_TRUE(journey_is_valid(net, src, dst, inactive, actual));
+      for (std::size_t i = 0; i < actual.legs.size() && i < oracle_seq.size();
+           ++i) {
+        CHECK_EQ(actual.legs[i].route, oracle_seq[i]);
+      }
+    }
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -357,6 +489,8 @@ int main() {
   test_repeated_queries_use_the_same_index();
   test_stats_match_the_search();
   test_worst_case_performance();
+  test_lexicographical_tie_breaking();
+  test_random_networks_against_oracle();
 
   if (check_failures == 0) {
     std::cout << "All tests passed.\n";
