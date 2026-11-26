@@ -1,7 +1,7 @@
 # Collaboration rules
 
 Short version: **one owner per file, one branch per task, every change through
-a reviewed PR, `main` always buildable.**
+a small PR, `main` always buildable.**
 
 ## 1. One-time setup (repo owner + each member)
 
@@ -17,8 +17,7 @@ gh api -X PUT repos/karthiknk7019/DSCE_AAT/collaborators/USERNAME \
 Owner — protect `main`: **Settings → Branches → Add branch protection rule**:
 
 - branch name pattern: `main`
-- [x] Require a pull request before merging
-- [x] Require approvals: **1**
+- [x] Require a pull request before merging (approvals: **0** — see §4)
 - [ ] (keep "Require status checks" off; there is no CI)
 
 Each member:
@@ -42,8 +41,9 @@ git commit -m "graph: implement minimum-bus BFS"
 git push -u origin role1/bfs
 ```
 
-Then open a PR, request review from the other two, and **squash merge** after
-one approval. Delete the branch.
+Then open a PR and **squash merge** as soon as `make` and `make test` pass.
+Self-merge is allowed: ask the other two for a quick look when they are free,
+but a review is not a gate. Delete the branch.
 
 Branch names: `role1/...`, `role2/...`, `role3/...`.
 Commit messages: `<area>: what changed` in the imperative
@@ -65,11 +65,15 @@ same helper, put it in `journey.hpp` through a 3-person PR, not by copying code.
 
 ## 4. PR rules
 
+Approval is optional — this is a time-boxed event. The author is responsible
+for the checks below before self-merging.
+
 - One concern per PR; keep it under ~200 changed lines.
 - The PR template asks what you changed, how you verified it, and what the AI
   wrote. Fill all three.
-- Reviewer checks: builds, `make test` passes, output matches
-  `docs/CONTRACT.md`, no leftover `TODO`, no unrelated reformatting.
+- Checks before merging (author or reviewer): builds, `make test` passes,
+  output matches `docs/CONTRACT.md`, no leftover `TODO`, no unrelated
+  reformatting.
 - Review promptly — a blocked PR is worse than an imperfect merge.
 - If `main` breaks, revert the offending merge first, fix on a branch second.
 
@@ -99,4 +103,4 @@ reviewing it, and the command you ran to verify.
 - [ ] `make test` passes (except the intentional red tests before Role 1 lands)
 - [ ] `make run` output matches `samples/expected1.txt`
 - [ ] `docs/DECISIONS.md` updated if you made a design choice
-- [ ] one teammate approved, branch deleted
+- [ ] you reread your own diff, `make` and `make test` are green, branch deleted
