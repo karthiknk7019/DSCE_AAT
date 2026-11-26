@@ -112,8 +112,12 @@ src/main.cpp          Role 2: entry point (batch, interactive, --serve)
 src/server.cpp        local HTTP + JSON API, POSIX sockets only
 tests/                Role 3: dependency-free tests (make test)
 tools/gen_network.cpp Role 3: 400-route / 40,000-appearance generator
+tools/import_bmtc.py  Role 3: BMTC GTFS -> contract sample + coordinates
+tools/check_bmtc.py   Role 3: validates the committed real-data sample
 tools/ui_smoke.sh     Role 3: end-to-end API check for the browser UI
+tools/ui_demo_check.sh Role 3: one-command Act 2c browser check (Playwright)
 web/                  single-page UI: no framework, no CDN, no build step
+web/data/bmtc.json    real stop coordinates, display names, attribution
 samples/              example, demo and expected outputs
 docs/                 contract, roles, decisions, UI, course mapping, demo
 ```
@@ -142,6 +146,20 @@ Work is parallel, not sequential — but these are the real dependencies:
 4. **Integrate** — `make test` green on `main`, run the sample and demo.
 5. **Prove it** — worst-case network, then rehearse the demo until all three
    can explain every design choice without notes.
+
+## Contributing (start here)
+
+New teammate? Open `docs/TASKS.md` for the work board and
+`docs/CONTRIBUTING.md` for the branch/PR loop. Claim a row before editing, then
+run the same check we all use:
+
+```bash
+make && make test && make ui-test && bash tools/smoke.sh
+```
+
+If you touched `web/` or `src/server.cpp`, also run
+`bash tools/ui_demo_check.sh`. The board is the source of truth; undocumented
+work is invisible to the other two members.
 
 ## Docs
 

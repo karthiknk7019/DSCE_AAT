@@ -50,8 +50,9 @@ ID order. Do not wait to be asked.**
 ### Real-data workstream
 
 Specification: `docs/UI-ROLES.md` → Real data workstream. The BMTC sample and
-its data notes (`docs/REAL-DATA.md`) are being prepared in a concurrent session
-and are **not on `main` yet**; do not duplicate that work.
+its data notes (`docs/REAL-DATA.md`) are committed on `main` (`0cab40c`). The
+remaining R1 work is visual verification of the geo map on the redesign branch
+(see U16); do not regenerate the sample.
 
 | # | Pri | Task | Status | Owner | Acceptance / evidence |
 |---|---|---|---|---|---|
@@ -61,14 +62,20 @@ and are **not on `main` yet**; do not duplicate that work.
 | R4 | P2 | Data refresh script + checksum/provenance | unclaimed | Role 3 | rerun produces identical sample or reports a diff; licence/date recorded |
 | R5 | P2 | Both directions per route | unclaimed | contract discussion | requires a naming rule or grammar change; do not do silently |
 | R6 | P2 | Data and licence panel | unclaimed | Role 2 | attribution + source link + generated date visible in the dialog |
-| R7 | P2 | Geo coverage test | unclaimed | Role 3 | every stop in `bmtc.txt` exists in `bmtc.json`; every query has a journey; smoke includes the expected output |
+| R7 | P2 | Geo coverage test | done | Role 3 | `python3 tools/check_bmtc.py` → OK (400 routes, 12,325 appearances, 2,175 stops, 4 queries, 4 output blocks); committed at `0cab40c` |
 | R8 | P2 | Dense-map keyboard stop search | done | Role 2 (karthiknk7019) | `make && make test && make ui-test && bash tools/smoke.sh && node --check web/app.js` passed; `#stopSearch` ARIA combobox (`F` shortcut, Up/Down/Enter/Shift+Enter/Esc), `#focusOverlay` O(1) pulse/ring pan+zoom, and `#focusedStopBar` Set From/To actions |
+
+### UI refresh branch (merge needed)
+
+| # | Pri | Task | Status | Owner | Acceptance / evidence |
+|---|---|---|---|---|---|
+| U16 | P0 | Merge the planner redesign + real BMTC geo map | blocked | Hermes agent | branch `ui/bmtc-redesign` pushed (4 commits); `make`, `make test`, `bash tools/smoke.sh`, `bash tools/ui_demo_check.sh` green on the branch; conflicts with U4–U12 in `web/` must be resolved before it can land |
 
 ## Notes
 
 - The BMTC sample (`samples/bmtc.txt`, `samples/expected-bmtc.txt`,
-  `tools/import_bmtc.py`, `web/data/bmtc.json`, `docs/REAL-DATA.md`) exists only
-  in a concurrent session's working tree; R1 is the remaining blocker before it
-  is committed and counts as done.
+  `tools/import_bmtc.py`, `web/data/bmtc.json`, `docs/REAL-DATA.md`) is on
+  `main` at `0cab40c`. `R1` still needs the redesigned geo map (U16) before it
+  can be marked done.
 - When a row is `done`, keep it in the table for one release cycle, then move
   it to an archive section at the bottom rather than deleting the evidence.

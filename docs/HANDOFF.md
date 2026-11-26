@@ -1,35 +1,47 @@
 # Handoff — current state
 
-Last updated: **2026-11-26, 12:35 IST**
+Last updated: **2026-11-26, 13:25 IST**
 
-The browser UI workstream is functionally complete, committed, and pushed to
-`origin/main`. This page is the short version for whoever picks it up next;
-the detailed map is `docs/UI-ROLES.md`, the user-facing tour is `docs/UI.md`.
+`main` now has the browser UI, the teammate features U4–U12/R8, and the real
+BMTC sample. The planner redesign and the real geo map are pushed on
+`ui/bmtc-redesign` but **not merged**: they conflict with the teammate UI work.
+This page is the short version for whoever picks it up next; the detailed map is
+`docs/UI-ROLES.md`, the user-facing tour is `docs/UI.md`.
 
 ## Git state
 
-- Branch: `main`
-- **All work is committed and pushed.** Current HEAD: `5edc520`
+- Branch: `main`; HEAD `0cab40c` (real BMTC data) plus this docs commit.
+- Review branch: `ui/bmtc-redesign` — 4 commits (`fccfc86`, `78ba616`,
+  `8e3a0a0`, `9424cb6`): real-data docs, the planner redesign + geo map, the
+  Act 2c browser check, and the seeded city generator.
+- The redesign must be rebased over `a35e02c` and merged by hand: `web/app.js`,
+  `web/index.html` and `web/style.css` conflict with U4–U12/R8. Do not drop the
+  teammate features. Task U16 in `docs/TASKS.md` tracks it.
 
-Commit history (newest first):
+Recent commits on `main` (newest first):
 
 | SHA | Message |
 |---|---|
-| `5edc520` | feat(graph): deterministic lexicographical tie-breaking; docs: add decision 20 |
-| `d0594c0` | ui: add browser front-end, BFS layer view and closure sweep |
-| `cc67512` | perf(graph): add hand-written StopIdMap hash table; docs: update DECISIONS.md |
-| `84e9634` | feat(cli): show total stops, intermediate stops, and transfer points in interactive mode |
-| `9a5fb54` | cli: add --interactive From/To/closed prompt mode |
-| `27e53ad` | perf(graph): compact stop IDs in BFS and deduplicate route index |
+| `0cab40c` | data: add real BMTC sample, importer, coverage check and geo map |
+| `a35e02c` | tools: add Act 2c browser demo check (U6) |
+| `5c68ffa` | ui: add dense-map keyboard stop search and focus overlay (R8) |
+| `a36bd61` | ui: export map as SVG and PNG (U12); docs: mark U12 done |
+| `564c49b` | ui: persist pasted network in localStorage (U9); docs: mark U5 & U9 done |
+| `7bf4d56` | ui: add accessibility focus rings, labels, ARIA, and non-colour cues (U7) |
+| `d3fe57c` | ui: add touch pinch-zoom, tap-slop guard, and 390px tap targets (U8) |
+| `0d47e1c` | ui: add route path hover tooltip (U5) |
 
 ## Verified on this machine
 
-Run from the repo root, 2026-11-26 (Windows x86_64, MinGW g++ -O2):
+Run from the repo root, 2026-11-26 (CachyOS, g++ 16.2.1):
 
 ```bash
-make            # no warnings (-Wall -Wextra -Wpedantic)
-make test       # 15 test functions, perf 19 ms (limit 1000 ms)
-bash tools/smoke.sh   # 4/4 sample files byte-exact (city, city-large, demo, example1)
+make                  # no warnings (-Wall -Wextra -Wpedantic)
+make test             # 15 test functions, perf 28 ms (limit 1000 ms)
+make ui-test          # API build/journey/closure/sweep/static all OK
+bash tools/smoke.sh   # 5/5 sample files byte-exact, including real BMTC
+python3 tools/check_bmtc.py  # OK: 400 routes, 12,325 appearances, 2,175 stops
+bash tools/ui_demo_check.sh  # Act 2c steps 1-6 green on ui/bmtc-redesign
 ```
 
 > **Note:** `src/server.cpp` requires POSIX sockets (`<arpa/inet.h>`).
@@ -61,6 +73,13 @@ bash tools/smoke.sh   # 4/4 sample files byte-exact (city, city-large, demo, exa
 | `docs/ROLES.md`, `docs/CONTRIBUTING.md`, `AGENTS.md` | fourth workstream + shortcut policy |
 | `.github/pull_request_template.md` | UI role, `make ui-test`, docs checklist |
 | `docs/wayfinder*.png` | screenshots (~900 KB total) |
+| `samples/bmtc.txt` | new: 400 real BMTC services, 12,325 appearances, 2,175 stops |
+| `samples/expected-bmtc.txt` | new: byte-exact CLI output, included in `tools/smoke.sh` |
+| `web/data/bmtc.json` | new: real stop coordinates + pretty names + attribution |
+| `tools/import_bmtc.py` | new: GTFS → contract converter (Python stdlib) |
+| `tools/check_bmtc.py` | new: validates the committed sample, coordinates and output blocks |
+| `docs/REAL-DATA.md` | new: source, licence, selection rules, regeneration |
+| `Makefile` | `make data` regenerates the BMTC sample and expected output |
 
 The batch path is untouched behaviourally:
 
@@ -73,28 +92,29 @@ The batch path is untouched behaviourally:
 1. `make && make test && make ui-test && bash tools/smoke.sh`
 2. `make serve`, open <http://127.0.0.1:8080>, run the seven steps in
    `docs/DEMO-SCRIPT.md` → Act 2c.
-3. Pick an unclaimed row from `docs/TASKS.md` (the specification is in
-   `docs/UI-ROLES.md`; U3, U5 and U9 are small).
+3. Take a row from `docs/TASKS.md`: U16 (merge the redesign — P0) is the
+   critical path; R1, U10, U11, U13 and U14 are open. Specifications live in
+   `docs/UI-ROLES.md`.
 
 ## Known gaps
 
-Nothing blocks the demo. These are the honest weak spots:
+Nothing blocks the CLI demo. These are the honest weak spots:
 
-- **Uncommitted.** Until it is committed, a fresh clone has no UI.
+- **Redesign branch not merged.** `ui/bmtc-redesign` has the refreshed planner
+  and the real geo map, but `web/` conflicts with U4–U12/R8. Resolve by hand and
+  keep both sides; do not force-push over `main`.
 - **Single-threaded server.** One request at a time, loopback only. Fine for a
   demo; not a hosted service.
-- **Browser automation is manual.** `make ui-test` checks the API, not pixels.
-  Task U6 in `docs/UI-ROLES.md` covers adding Playwright for the UI part.
-- **Accessibility pass implemented (U7).** Added `:focus-visible` outlines,
-  form `<label>`s, `aria-labelledby` on `#networkDialog`, landmark labels,
-  live regions, tab arrow navigation, `closed` text badges, dashed destination
-  rings, and WCAG AA `--dim` contrast (automated `axe` run in headless
-  browser still recommended once Chromium/Playwright is wired under U6).
-- **Touch gestures & 390 px layout added (U8).** Two-finger pinch-zoom,
-  10 px touch tap-slop pan guard, and larger mobile tap targets are implemented
-  in `web/app.js` and `web/style.css` (not yet exercised on physical touch hardware).
-- **Pasted networks are not shareable.** The URL hash stores the sample file
-  name; a pasted network lives in memory only (U9).
+- **Browser automation exists but is UI-version-specific.** `make ui-test`
+  checks the API; `bash tools/ui_demo_check.sh` drives Act 2c in Playwright.
+  Its selectors track `ui/bmtc-redesign`, so re-run it after any `web/` merge.
+- **Accessibility pass implemented (U7).** Keyboard focus, labels, ARIA and
+  non-colour cues are in; an automated `axe` run is still worth doing on the
+  final merged UI.
+- **Touch gestures & 390 px layout added (U8).** Implemented and checked in
+  Chromium at 390 px; not yet exercised on physical touch hardware.
+- **Pasted networks persist locally (U9)** but the URL hash still stores only a
+  sample file name, so a pasted network is not shareable by link.
 - **Screenshots add ~900 KB** to the repo. Delete them if size matters more
   than the README.
 

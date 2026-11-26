@@ -3,6 +3,31 @@
 Short version: **one owner per file, one branch per task, every change through
 a small PR, `main` always buildable.**
 
+## 0. Start here (new contributor, 10 minutes)
+
+Read in this order: `README.md` → `docs/CONTRACT.md` (the exact input/output
+grammar) → `docs/TASKS.md` (pick a row) → `docs/UI-ROLES.md` only if you are
+touching the browser UI. `docs/DECISIONS.md` explains why the code looks the
+way it does; read the rows for the area you are about to change.
+
+Then build and run the same checks the rest of us use:
+
+```bash
+git clone https://github.com/karthiknk7019/DSCE_AAT.git
+cd DSCE_AAT
+make && make test && make ui-test && bash tools/smoke.sh
+```
+
+`make` and `make test` are the graded checks. `make ui-test` exercises the HTTP
+API; `bash tools/smoke.sh` compares every checked-in sample byte-for-byte
+(including the real BMTC network). If you touched `web/`, also run
+`bash tools/ui_demo_check.sh` (needs Playwright once:
+`python3 -m pip install playwright && python3 -m playwright install chromium`).
+
+Pick work from `docs/TASKS.md`, not from memory: claim the row in the same PR
+that does the work. If the row you want is taken, take the next unclaimed P0,
+then P1 in ID order.
+
 ## 1. One-time setup (repo owner + each member)
 
 Owner (`karthiknk7019`) — add the other two as collaborators:
@@ -37,6 +62,8 @@ git switch main && git pull
 git switch -c role1/bfs          # roleN/short-topic
 # ... work ...
 make && make test
+# If you touched src/server.cpp or web/, also:
+make ui-test && bash tools/smoke.sh && bash tools/ui_demo_check.sh
 git add -p                       # review your own diff before committing
 git commit -m "graph: implement minimum-bus BFS"
 git push -u origin role1/bfs
