@@ -43,6 +43,7 @@ dependencies beyond POSIX sockets. The batch mode is untouched:
 | Result card | Buses boarded, ordered legs, transfer stops, stops served by those routes, and a **Copy CLI** button that copies the exact `JOURNEY ...` block. |
 | Why this is minimal | The layer histogram plus the argument: the destination first appears in layer *k*, and layers `0..k-1` contain every stop reachable with fewer buses. |
 | Closure sweep | Closes every route in turn and re-queries; reports which closures strand the passenger and which add buses. One index, N searches. |
+| Batch queries | Runs all `query` lines parsed from a loaded or pasted file sequentially against the same index and renders a clickable result table. |
 | Recent queries | Every query is clickable; the URL hash is shareable for sample networks. |
 | Network dialog | Four checked-in samples, or paste any network in the contract grammar. |
 

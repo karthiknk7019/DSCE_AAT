@@ -49,6 +49,7 @@ Implemented and manually verified (2026-11-26):
 - [x] network dialog: four samples + paste an unseen network
 - [x] responsive down to ~760 px; no horizontal overflow
 - [x] hover a route in the list to highlight its path on the map (`.route-hover`, **U3**)
+- [x] run all parsed `query` lines sequentially and show a clickable result table (**U4**)
 - [x] `make ui-test` API smoke; screenshots in `docs/wayfinder*.png`
 
 Verified numbers on the i7-13620H demo machine:
@@ -172,7 +173,7 @@ in the group chat, and put your name in the PR title.
 | # | Task | Size | Suggested owner | Acceptance |
 |---|---|---|---|---|
 | U3 | ~~Hover a route in the list → highlight its path on the map~~ **done by Role 2** | S | Role 2 | hover adds a `route-hover` class; no query fired |
-| U4 | "Run all queries" from a pasted file | M | Role 2 | parses the `query` lines already collected, runs them sequentially, shows a result table |
+| U4 | ~~"Run all queries" from a pasted file~~ **done by Role 2** | M | Role 2 | parses the `query` lines already collected, runs them sequentially, shows a result table |
 | U5 | Route tooltip when hovering a path | S | Role 3 | tooltip shows name + stop count + open/closed |
 | U6 | Browser automation for the 6-step demo | M | Role 3 | one command reproduces Act 2c; screenshots on failure |
 | U7 | Accessibility pass | M | anyone | keyboard focus visible, dialog labelled, colour not the only signal, axe clean |

@@ -63,6 +63,10 @@ const state = {
   closed: new Set(),
   result: null,
   impact: null,
+  batchResults: null,
+  batchRunning: false,
+  batchError: null,
+  batchToken: 0,
   log: [],
   queries: [],
   viewport: null,
@@ -1293,7 +1297,7 @@ function renderResult() {
   const result = state.result;
   if (!result) {
     host.hidden = true;
-    showEmptyState(true);
+    showEmptyState(!state.batchResults && !state.batchRunning);
     return;
   }
   host.hidden = false;
@@ -1738,6 +1742,172 @@ function renderImpactRows(host, data) {
   host.appendChild(foot);
 }
 
+function renderBatchCard() {
+  const host = $('#batchCard');
+  const queries = state.queries || [];
+  const shouldShow =
+    queries.length > 0 &&
+    (Boolean(state.result) || Boolean(state.batchResults) || state.batchRunning);
+  if (!shouldShow) {
+    host.hidden = true;
+    return;
+  }
+  host.hidden = false;
+  clear(host);
+
+  const card = elem('div', 'card');
+  const head = elem('div', 'card-head');
+  head.appendChild(elem('div', 'eyebrow', 'Batch queries'));
+  head.appendChild(
+    elem('span', 'pill-time', `${queries.length} ${queries.length === 1 ? 'query' : 'queries'}`)
+  );
+  card.appendChild(head);
+
+  const top = elem('div', 'resilience-head');
+  top.appendChild(
+    elem(
+      'p',
+      null,
+      'Run every query line parsed from the loaded or pasted file sequentially against the same index.'
+    )
+  );
+  const button = elem(
+    'button',
+    'sweep-btn',
+    state.batchRunning
+      ? `Running ${(state.batchResults || []).length}/${queries.length}…`
+      : state.batchResults
+        ? 'Run again'
+        : 'Run all'
+  );
+  button.disabled = state.batchRunning;
+  button.addEventListener('click', () => runAllQueries());
+  top.appendChild(button);
+  card.appendChild(top);
+
+  if (state.batchError) {
+    card.appendChild(elem('p', 'field-error', state.batchError));
+  }
+
+  const rows = state.batchResults;
+  if (rows && rows.length > 0) {
+    let foundCount = 0;
+    let totalMicros = 0;
+    for (const row of rows) {
+      if (row.found) {
+        foundCount += 1;
+      }
+      totalMicros += row.microseconds;
+    }
+    const missedCount = rows.length - foundCount;
+
+    const summary = elem('div', 'impact-summary');
+    summary.appendChild(elem('span', 'impact-chip', `${foundCount} found`));
+    if (missedCount > 0) {
+      summary.appendChild(
+        elem('span', 'impact-chip bad', `${missedCount} no journey`)
+      );
+    }
+    summary.appendChild(
+      elem('span', 'impact-chip', `${formatMicros(totalMicros)} total`)
+    );
+    card.appendChild(summary);
+
+    const table = elem('div', 'batch-table');
+    for (const row of rows) {
+      const item = elem('button', 'batch-row');
+      item.type = 'button';
+
+      const pair = elem('span', 'bpair');
+      const label =
+        row.inactive.length > 0
+          ? `${row.source} → ${row.destination} (−${row.inactive.join(',')})`
+          : `${row.source} → ${row.destination}`;
+      pair.textContent = label;
+      pair.title = `Load query #${row.index}: ${label}`;
+      item.appendChild(pair);
+
+      const status = row.found
+        ? `${row.buses} bus${row.buses === 1 ? '' : 'es'}`
+        : 'NO JOURNEY';
+      item.appendChild(
+        elem('span', 'bstatus' + (row.found ? '' : ' none'), status)
+      );
+      item.appendChild(elem('span', 'btime', formatMicros(row.microseconds)));
+
+      item.addEventListener('click', () => {
+        setPair(row.source, row.destination, row.inactive);
+        runQuery();
+      });
+      table.appendChild(item);
+    }
+    card.appendChild(table);
+
+    const foot = elem('p', 'micro');
+    foot.style.marginTop = '9px';
+    foot.textContent = `${rows.length} of ${queries.length} run sequentially · click a row to inspect`;
+    card.appendChild(foot);
+  } else if (!state.batchRunning) {
+    card.appendChild(
+      elem('p', 'micro', 'Click Run all to test every query line in the network file.')
+    );
+  }
+
+  host.appendChild(card);
+}
+
+async function runAllQueries() {
+  if (!state.network || state.queries.length === 0 || state.batchRunning) {
+    return;
+  }
+  const token = ++state.batchToken;
+  state.batchRunning = true;
+  state.batchError = null;
+  state.batchResults = [];
+  showEmptyState(false);
+  renderQuickPairs();
+  renderBatchCard();
+
+  try {
+    for (let i = 0; i < state.queries.length; i += 1) {
+      if (token !== state.batchToken) {
+        return;
+      }
+      const pair = state.queries[i];
+      const result = await api('/api/journey', {
+        source: pair.source,
+        destination: pair.destination,
+        inactive: pair.inactive,
+      });
+      if (token !== state.batchToken) {
+        return;
+      }
+      state.batchResults.push({
+        index: i + 1,
+        source: pair.source,
+        destination: pair.destination,
+        inactive: pair.inactive,
+        found: result.found,
+        buses: result.buses,
+        microseconds: result.stats ? result.stats.microseconds : 0,
+      });
+      if (i + 1 === state.queries.length || i < 10 || (i + 1) % 10 === 0) {
+        renderBatchCard();
+      }
+    }
+  } catch (error) {
+    if (token === state.batchToken) {
+      state.batchError = error.message;
+    }
+  } finally {
+    if (token === state.batchToken) {
+      state.batchRunning = false;
+      renderQuickPairs();
+      renderBatchCard();
+    }
+  }
+}
+
 function renderLog() {
   const host = $('#logCard');
   if (state.log.length === 0) {
@@ -1863,6 +2033,7 @@ async function runQuery() {
     renderResult();
     renderProof();
     renderResilience();
+    renderBatchCard();
     renderLog();
     updateHash();
     renderMap({ fit: state.mode === 'layers' });
@@ -2025,6 +2196,17 @@ function renderQuickPairs() {
     runQuery();
   });
   host.appendChild(random);
+
+  if (state.queries.length > 0) {
+    const runAll = elem(
+      'button',
+      'quick-pair accent',
+      state.batchRunning ? 'Running all…' : `Run all (${state.queries.length})`
+    );
+    runAll.disabled = state.batchRunning;
+    runAll.addEventListener('click', () => runAllQueries());
+    host.appendChild(runAll);
+  }
 }
 
 function renderDemoPairs() {
@@ -2072,6 +2254,10 @@ async function installNetwork(name, routes, options) {
   state.closed = new Set();
   state.result = null;
   state.impact = null;
+  state.batchToken += 1;
+  state.batchRunning = false;
+  state.batchError = null;
+  state.batchResults = null;
   state.log = [];
   state.activeField = 'from';
   state.sampleFile = opts.sampleFile || null;
@@ -2083,6 +2269,7 @@ async function installNetwork(name, routes, options) {
   renderResult();
   renderProof();
   renderResilience();
+  renderBatchCard();
   renderLog();
   syncClearButtons();
   renderMap({ fit: true });

@@ -31,6 +31,7 @@ same PR that makes the choice. "Why" is the part you say out loud in the viva.
 | 24 | The JSON reachable list is capped at 2,500 stops; layer **counts** are always exact | Bounds the response on pathological inputs; the legend discloses truncation, so the minimality argument never depends on the cap | Unbounded payload, or silently drawing a subset | UI |
 | 25 | Optional batch `[input-file]` in `main.cpp` while rejecting unknown `-` flags with usage on stderr | Lets users run `./build/journey samples/city.txt` without shell redirection while failing fast on CLI typos | Treating `--unknown` as a filename or forcing shell redirection | Role 2 |
 | 26 | Route list hover highlights `.route-path.route-hover` purely in CSS/DOM (`setHoveredRoute`) | Keeps map highlighting instant on 400-route networks without firing `/api/journey` or re-running force layout | Re-rendering the full SVG or querying the server on hover | Role 2 |
+| 27 | "Run all queries" executes parsed `query` lines sequentially via `/api/journey` (`runAllQueries`) | Reuses the single-threaded server and one built index without adding a new batch HTTP endpoint, and lets the user inspect any row on click | Adding a dedicated `/api/batch` endpoint or firing 100 concurrent requests | Role 2 |
 
 ## Perf log
 
