@@ -23,6 +23,13 @@ for a Data Structures course. Correctness and explainability beat cleverness.
 6. **Do not weaken tests to make them pass.** If a test fails, fix the code or
    explain why the test is wrong — in the PR, not silently.
 7. **No secrets.** Never commit tokens, credentials or `.env` files.
+8. **Claim your work in `docs/TASKS.md` before you change code.** The board is
+   the single source of truth for who is doing what. Set your row to `claimed`
+   with your name/session, and set it to `done` with the verifying command and
+   commit when it passes. If you are not assigned a task, take the first
+   `unclaimed` P0 row, then P1 in ID order — do not wait to be asked. If you
+   find unlisted work, add a row first. Never edit a row you do not own except
+   to unclaim it or add a note.
 
 ## Before you finish any task
 
@@ -34,6 +41,7 @@ make run        # must match samples/expected1.txt
 
 If you changed behaviour, update `docs/DECISIONS.md`.
 If you changed the interface, stop and ask: `include/journey.hpp` is frozen.
+Mark your `docs/TASKS.md` row `done` with the command you ran.
 
 ## Style
 
