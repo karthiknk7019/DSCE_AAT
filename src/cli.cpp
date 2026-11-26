@@ -208,6 +208,112 @@ void print_journey(std::ostream& out, const std::string& destination,
   out.flush();
 }
 
+const Route* find_route_by_name(const Network& network,
+                                const std::string& name) {
+  for (const Route& route : network.routes) {
+    if (route.name == name) {
+      return &route;
+    }
+  }
+  return nullptr;
+}
+
+// Traces the stop sequence along `route` between `from` and `to`, picking the
+// shortest slice if a stop appears more than once on the route.
+std::vector<std::string> trace_leg_stops(const Route& route,
+                                         const std::string& from,
+                                         const std::string& to) {
+  size_t best_i = 0;
+  size_t best_j = 0;
+  size_t best_dist = route.stops.size() + 1;
+
+  for (size_t i = 0; i < route.stops.size(); ++i) {
+    if (route.stops[i] != from) {
+      continue;
+    }
+    for (size_t j = 0; j < route.stops.size(); ++j) {
+      if (route.stops[j] != to) {
+        continue;
+      }
+      const size_t dist = (i <= j) ? (j - i) : (i - j);
+      if (dist < best_dist) {
+        best_dist = dist;
+        best_i = i;
+        best_j = j;
+      }
+    }
+  }
+
+  if (best_dist > route.stops.size()) {
+    return {from, to};
+  }
+
+  std::vector<std::string> path;
+  path.reserve(best_dist + 1);
+  if (best_i <= best_j) {
+    for (size_t k = best_i; k <= best_j; ++k) {
+      path.push_back(route.stops[k]);
+    }
+  } else {
+    for (size_t k = best_i;; --k) {
+      path.push_back(route.stops[k]);
+      if (k == best_j) {
+        break;
+      }
+    }
+  }
+  return path;
+}
+
+void print_interactive_details(std::ostream& out, const Network& network,
+                               const Journey& journey) {
+  if (journey.legs.empty()) {
+    return;
+  }
+
+  out << "Route details:\n";
+  size_t total_stops = 1;
+  for (size_t i = 0; i < journey.legs.size(); ++i) {
+    const Leg& leg = journey.legs[i];
+    const Route* route = find_route_by_name(network, leg.route);
+    std::vector<std::string> stops =
+        route ? trace_leg_stops(*route, leg.from, leg.to)
+              : std::vector<std::string>{leg.from, leg.to};
+
+    if (stops.size() > 1) {
+      total_stops += stops.size() - 1;
+    }
+
+    out << "  " << (i + 1) << ": " << leg.route << " (" << stops.size()
+        << (stops.size() == 1 ? " stop): " : " stops): ");
+    for (size_t s = 0; s < stops.size(); ++s) {
+      if (s > 0) {
+        out << " -> ";
+      }
+      out << stops[s];
+    }
+    out << '\n';
+  }
+
+  const size_t transfers = journey.legs.size() - 1;
+  out << "Summary: " << journey.legs.size()
+      << (journey.legs.size() == 1 ? " bus, " : " buses, ") << total_stops
+      << " total stops, " << transfers
+      << (transfers == 1 ? " transfer" : " transfers");
+  if (transfers > 0) {
+    out << " (change at: ";
+    for (size_t i = 0; i < transfers; ++i) {
+      if (i > 0) {
+        out << ", ";
+      }
+      out << journey.legs[i].to;
+    }
+    out << ')';
+  }
+  out << '\n';
+  out.flush();
+}
+
 }  // namespace
 
 int run_cli(std::istream& in, std::ostream& out) {
@@ -326,6 +432,9 @@ int run_interactive(std::istream& network_in, std::istream& input,
     out << '\n';
     bool printed_any = false;
     print_journey(out, destination, found, journey, printed_any);
+    if (found) {
+      print_interactive_details(out, network, journey);
+    }
     out << '\n';
   }
 
