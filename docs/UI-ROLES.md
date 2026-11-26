@@ -196,7 +196,7 @@ in `docs/TASKS.md`, and put your name in the PR title.
 | U10 | k-shortest / alternative journeys panel | L | Role 1 | new API field, tests, UI list; still BFS |
 | U11 | ~~Server request log + optional `--threads N`~~ **done by Role 2 & Role 3** | M | shared | opt-in; default remains single-threaded |
 | U12 | Export the map as SVG/PNG | M | Role 3 | client-side download; no new dependency |
-| U13 | Deploy notes (systemd user unit, reverse proxy) | S | shared | documented only; loopback by default |
+| U13 | ~~Deploy notes (systemd user unit, reverse proxy)~~ **done by Role 2 & Role 3** | S | shared | documented only; loopback by default |
 | U14 | ~~Light theme via CSS variables~~ **done by Role 3** | S | Role 3 | toggle persists; contrast checked |
 
 Do **not** add: accounts, a database, a map tile service, a routing library, or

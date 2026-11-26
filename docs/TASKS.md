@@ -43,7 +43,7 @@ ID order. Do not wait to be asked.**
 | U10 | P2 | k-shortest / alternative journeys panel | unclaimed | Role 1 | new API field, tests, UI list; still BFS |
 | U11 | P2 | Server request log + optional `--threads N` | done | Role 2 & Role 3 (karthiknk7019) | `make && make test && make ui-test` passed; opt-in `--log` and `--threads N` (`1..16`, default single-threaded), `std::shared_mutex` protecting `AppState`, verified in `tools/ui_smoke.sh` |
 | U12 | P2 | Export the map as SVG/PNG | done | Role 3 (Antigravity) | `buildExportSvg`/`exportSvg`/`exportPng`/`triggerDownload` in `web/app.js`; `#exportSvgBtn` and `#exportPngBtn` in `.stage-actions`; brace/paren balance verified; SVG inlines CSS vars + bg rect; PNG rasterises via Canvas at device pixel ratio |
-| U13 | P2 | Deploy notes (systemd user unit, reverse proxy) | unclaimed | shared | documented only; loopback by default |
+| U13 | P2 | Deploy notes (systemd user unit, reverse proxy) | done | Role 2 & Role 3 (karthiknk7019) | `docs/DEPLOY.md` documents `systemd --user` service, Caddy/Nginx reverse proxy, `--threads`/`--log`, and `127.0.0.1` loopback default; linked from `README.md` and `docs/UI.md` |
 | U14 | P2 | Light theme via CSS variables | blocked | Role 3 (karthiknk7019) | Light tokens landed in `4591382`, but the merged redesign (U16) ships one light theme: the `#themeBtn` dark half is not wired into the new stylesheet. Needs a dark-variable pass before it can be called done again |
 | U15 | P0 | Realistic large-city sample: replace the uniform lattice in `samples/city-large.txt` with a seeded generator (corridors, hubs, feeders, uneven route lengths) | claimed | Hermes (Role 3 session) | generator committed; `make && make test && bash tools/smoke.sh` byte-exact; route-length and stop-degree distributions varied; contract limits respected |
 
@@ -70,6 +70,7 @@ remaining R1 work is visual verification of the geo map on the redesign branch
 | # | Pri | Task | Status | Owner | Acceptance / evidence |
 |---|---|---|---|---|---|
 | U16 | P0 | Merge the planner redesign + real BMTC geo map | done | Hermes agent | `0a2ac9e` merged into `main`, final integration `018681d`; `make`, `make test`, `make ui-test`, `bash tools/smoke.sh` 5/5, `make real-check`, `python3 tools/check_bmtc.py` and `bash tools/ui_demo_check.sh` all pass; BMTC loads 400 routes/2,175 stops at 1512×950 and 760×1000 with no console errors |
+| U17 | P1 | Automated CLI contract test suite (`tools/cli_test.sh` + `make cli-test`) | done | Role 2 & Role 3 (karthiknk7019) | `make cli-test` passed (15/15 checks: batch stdin, file arg, `--interactive`, `--help`, invalid flags/threads, malformed network/query errors, unknown inactive route warnings, exit codes) |
 
 ## Notes
 

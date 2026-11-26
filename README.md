@@ -115,6 +115,8 @@ tools/gen_network.cpp Role 3: 400-route / 40,000-appearance generator
 tools/import_bmtc.py  Role 3: BMTC GTFS -> contract sample + coordinates
 tools/check_bmtc.py   Role 3: validates the committed real-data sample
 tools/ui_smoke.sh     Role 3: end-to-end API check for the browser UI
+tools/cli_test.sh     Role 2/3: 15-case CLI contract & error-handling check
+tools/refresh_bmtc.py Role 3: BMTC GTFS refresh + SHA-256 provenance check
 tools/ui_demo_check.sh Role 3: one-command Act 2c browser check (Playwright)
 web/                  single-page UI: no framework, no CDN, no build step
 web/data/bmtc.json    real stop coordinates, display names, attribution
@@ -168,6 +170,7 @@ work is invisible to the other two members.
 | [docs/CONTRACT.md](docs/CONTRACT.md) | input/output spec and API semantics — **read first** |
 | [docs/UI.md](docs/UI.md) | the browser front-end: API, BFS layer view, demo path |
 | [docs/UI-ROLES.md](docs/UI-ROLES.md) | UI ownership, architecture, extension recipes, backlog |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | `systemd` user service and reverse-proxy notes for `--serve` |
 | [docs/REAL-DATA.md](docs/REAL-DATA.md) | real BMTC sample: source, licence, conversion, regeneration |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | current state, verification commands, known gaps |
 | [docs/ROLES.md](docs/ROLES.md) | what each role builds, step by step |

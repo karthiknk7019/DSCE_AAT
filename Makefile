@@ -8,7 +8,7 @@ GEN_BIN  := $(BUILD)/gen_network
 
 CORE_SRC := src/graph.cpp src/cli.cpp src/server.cpp
 
-.PHONY: all run serve test ui-test gen data real-check clean
+.PHONY: all run serve test cli-test ui-test gen data real-check clean
 
 all: $(BIN)
 
@@ -35,6 +35,9 @@ test: $(TEST_BIN)
 
 ui-test: $(BIN)
 	bash tools/ui_smoke.sh
+
+cli-test: $(BIN)
+	bash tools/cli_test.sh
 
 gen: $(GEN_BIN)
 	./$(GEN_BIN) > samples/big.txt

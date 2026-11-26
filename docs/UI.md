@@ -161,6 +161,7 @@ web/app.js             parser, layout, maps, panels (no framework)
 web/style.css          design system and responsive layout
 web/favicon.svg        roundel
 tools/ui_smoke.sh      starts a server and checks the API end to end
+docs/DEPLOY.md         systemd user unit and reverse-proxy deployment notes
 ```
 
 ## Two-minute demo
