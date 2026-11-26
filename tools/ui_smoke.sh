@@ -85,4 +85,36 @@ curl -sf "$base/samples/city.txt" | grep -q 'routes 7' || fail "sample file was 
 code=$(curl -s -o /dev/null -w '%{http_code}' "$base/api/does-not-exist")
 [ "$code" = "404" ] || fail "unknown API path returned $code, expected 404"
 
-echo "ui-smoke: build, journey, closure, sweep and static files all OK"
+# Also verify opt-in --log and --threads 2 (U11) without breaking default mode.
+kill "$server_pid" 2>/dev/null
+wait "$server_pid" 2>/dev/null || true
+
+port2=${UI_SMOKE_PORT_MT:-$((port + 1))}
+log2=$(mktemp)
+"$bin" --serve --port "$port2" --threads 2 --log >"$log2" 2>&1 &
+server_pid=$!
+trap 'kill "$server_pid" 2>/dev/null; wait "$server_pid" 2>/dev/null; rm -f "$log" "$log2"' EXIT
+
+base2="http://127.0.0.1:$port2"
+ready2=0
+for _ in $(seq 1 50); do
+  if curl -sf "$base2/api/network" >/dev/null 2>&1; then
+    ready2=1
+    break
+  fi
+  sleep 0.1
+done
+[ "$ready2" = 1 ] || fail "multi-threaded server did not start on $port2"
+
+curl -sf -X POST "$base2/api/build" -H 'Content-Type: application/json' -d "$body" >/dev/null \
+  || fail "POST /api/build failed on --threads 2"
+curl -sf -X POST "$base2/api/journey" -d '{"source":"1","destination":"6"}' >/dev/null &
+p1=$!
+curl -sf -X POST "$base2/api/journey" -d '{"source":"7","destination":"7"}' >/dev/null &
+p2=$!
+wait "$p1" "$p2" || fail "concurrent /api/journey failed on --threads 2"
+
+grep -q '\[http\] POST /api/journey -> 200' "$log2" \
+  || fail "expected --log request line in server output"
+
+echo "ui-smoke: build, journey, closure, sweep, threaded --log and static files all OK"

@@ -9,6 +9,13 @@
   --bg-2: #080e1a;
   --panel: rgba(15, 24, 41, 0.92);
   --panel-2: rgba(10, 17, 30, 0.94);
+  --topbar-bg: rgba(6, 10, 18, 0.82);
+  --stage-bg: radial-gradient(120% 90% at 50% 0%, #0d182b 0%, #080e1a 52%, #050910 100%);
+  --stage-bar-bg: rgba(6, 11, 20, 0.45);
+  --surface-elevated: #0b1424;
+  --surface-dialog: #0a1120;
+  --surface-toast: #0c1a22;
+  --surface-swap: #0d1728;
   --line: rgba(148, 163, 184, 0.14);
   --line-strong: rgba(148, 163, 184, 0.28);
   --text: #e9eefb;
@@ -19,11 +26,51 @@
   --amber: #fbbf24;
   --rose: #fb7185;
   --violet: #a78bfa;
+  --primary-bg: linear-gradient(135deg, #5eead4, #38bdf8);
+  --primary-fg: #04121a;
+  --error-text: #fda4af;
+  --node-fill: #0b1424;
+  --node-stroke: rgba(148, 163, 184, 0.45);
+  --label-fill: #b9c7dc;
+  --label-strong: #ffffff;
+  --label-stroke: #060a12;
   --sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Ubuntu, Cantarell, sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo,
     Consolas, monospace;
   --radius: 14px;
+}
+
+:root[data-theme="light"] {
+  --bg: #f1f5f9;
+  --bg-2: #ffffff;
+  --panel: rgba(255, 255, 255, 0.94);
+  --panel-2: rgba(248, 250, 252, 0.96);
+  --topbar-bg: rgba(255, 255, 255, 0.9);
+  --stage-bg: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #f1f5f9 55%, #e2e8f0 100%);
+  --stage-bar-bg: rgba(248, 250, 252, 0.88);
+  --surface-elevated: #ffffff;
+  --surface-dialog: #ffffff;
+  --surface-toast: #0f172a;
+  --surface-swap: #f8fafc;
+  --line: rgba(15, 23, 42, 0.12);
+  --line-strong: rgba(15, 23, 42, 0.24);
+  --text: #0f172a;
+  --muted: #334155;
+  --dim: #475569;
+  --mint: #0f766e;
+  --sky: #0369a1;
+  --amber: #b45309;
+  --rose: #be123c;
+  --violet: #6d28d9;
+  --primary-bg: linear-gradient(135deg, #0f766e, #0369a1);
+  --primary-fg: #ffffff;
+  --error-text: #9f1239;
+  --node-fill: #ffffff;
+  --node-stroke: rgba(15, 23, 42, 0.35);
+  --label-fill: #1e293b;
+  --label-strong: #0f172a;
+  --label-stroke: #f8fafc;
 }
 
 *,
@@ -116,7 +163,7 @@ p {
   gap: 20px;
   padding: 0 20px;
   border-bottom: 1px solid var(--line);
-  background: rgba(6, 10, 18, 0.82);
+  background: var(--topbar-bg);
   backdrop-filter: blur(14px);
   position: relative;
   z-index: 20;
@@ -481,7 +528,7 @@ p {
   z-index: 2;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0d1728;
+  background: var(--surface-swap);
   color: var(--dim);
   transition: 0.15s;
 }
@@ -507,8 +554,8 @@ p {
   gap: 9px;
   border: 1px solid rgba(94, 234, 212, 0.55);
   border-radius: 10px;
-  background: linear-gradient(135deg, #5eead4, #38bdf8);
-  color: #04121a;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -552,7 +599,7 @@ p {
   border: 1px solid rgba(251, 113, 133, 0.3);
   background: rgba(251, 113, 133, 0.08);
   border-radius: 8px;
-  color: #fda4af;
+  color: var(--error-text);
   font-size: 11.5px;
   line-height: 1.45;
 }
@@ -723,8 +770,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 16px;
   overflow: hidden;
-  background:
-    radial-gradient(120% 90% at 50% 0%, #0d182b 0%, #080e1a 52%, #050910 100%);
+  background: var(--stage-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
@@ -737,7 +783,7 @@ p {
   gap: 12px;
   padding: 0 12px;
   border-bottom: 1px solid var(--line);
-  background: rgba(6, 11, 20, 0.45);
+  background: var(--stage-bar-bg);
 }
 
 .seg {
@@ -817,8 +863,8 @@ p {
   padding: 4px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
-  background: rgba(8, 14, 26, 0.98);
-  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.85);
+  background: var(--surface-elevated);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.45);
 }
 
 .stop-search-item {
@@ -873,9 +919,9 @@ p {
   padding: 6px 10px;
   border: 1px solid rgba(94, 234, 212, 0.35);
   border-radius: 10px;
-  background: rgba(8, 14, 26, 0.94);
+  background: var(--panel-2);
   backdrop-filter: blur(10px);
-  box-shadow: 0 14px 32px -16px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 14px 32px -16px rgba(0, 0, 0, 0.45);
 }
 
 .focus-stop-name {
@@ -1124,8 +1170,8 @@ p {
   padding: 8px 10px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: #0b1424;
-  box-shadow: 0 18px 40px -16px #000;
+  background: var(--surface-elevated);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.45);
   font-size: 11px;
   color: var(--muted);
   pointer-events: none;
@@ -1857,9 +1903,9 @@ dialog {
   padding: 0;
   border: 1px solid var(--line-strong);
   border-radius: 18px;
-  background: #0a1120;
+  background: var(--surface-dialog);
   color: var(--text);
-  box-shadow: 0 50px 140px -30px #000;
+  box-shadow: 0 50px 140px -30px rgba(0, 0, 0, 0.55);
 }
 
 dialog::backdrop {
@@ -2010,8 +2056,8 @@ dialog::backdrop {
   padding: 9px 15px;
   border: 1px solid rgba(94, 234, 212, 0.3);
   border-radius: 9px;
-  background: #0c1a22;
-  color: var(--mint);
+  background: var(--surface-toast);
+  color: #5eead4;
   font-size: 11.5px;
   box-shadow: 0 20px 50px -20px #000;
   animation: toast-in 0.2s ease-out both;
@@ -2065,16 +2111,16 @@ dialog::backdrop {
   font-family: var(--sans);
   font-size: 10.5px;
   font-weight: 500;
-  fill: #b9c7dc;
+  fill: var(--label-fill);
   pointer-events: none;
   paint-order: stroke;
-  stroke: #060a12;
+  stroke: var(--label-stroke);
   stroke-width: 3.5px;
   stroke-linejoin: round;
 }
 
 .stop-label.strong {
-  fill: #ffffff;
+  fill: var(--label-strong);
   font-weight: 650;
 }
 

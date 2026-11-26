@@ -28,13 +28,17 @@
 #include <cctype>
 #include <cerrno>
 #include <chrono>
+#include <condition_variable>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <mutex>
+#include <shared_mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -1068,6 +1072,101 @@ void handle_request(const ServerOptions& options, AppState& state,
   api_error(response, 404, "not found");
 }
 
+struct ServerContext {
+  AppState state;
+  std::shared_mutex state_mutex;
+  std::mutex log_mutex;
+};
+
+void handle_request_locked(const ServerOptions& options, ServerContext& ctx,
+                           const HttpRequest& request, HttpResponse& response) {
+  if (request.method == "GET" && request.path == "/api/network") {
+    std::shared_lock<std::shared_mutex> lock(ctx.state_mutex);
+    handle_request(options, ctx.state, request, response);
+    return;
+  }
+  if (request.method == "POST" && request.path == "/api/build") {
+    std::unique_lock<std::shared_mutex> lock(ctx.state_mutex);
+    handle_request(options, ctx.state, request, response);
+    return;
+  }
+  if (request.method == "POST" &&
+      (request.path == "/api/journey" || request.path == "/api/impact")) {
+    std::shared_lock<std::shared_mutex> lock(ctx.state_mutex);
+    handle_request(options, ctx.state, request, response);
+    return;
+  }
+  // Static file serving and error responses do not touch AppState.
+  handle_request(options, ctx.state, request, response);
+}
+
+void serve_connection(const ServerOptions& options, ServerContext& ctx,
+                      int client_fd) {
+  timeval timeout{};
+  timeout.tv_sec = 10;
+  ::setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+  const auto start = std::chrono::steady_clock::now();
+  HttpRequest request;
+  HttpResponse response;
+  const bool parsed = read_request(client_fd, request);
+  if (!parsed) {
+    api_error(response, 400, "malformed request");
+  } else {
+    handle_request_locked(options, ctx, request, response);
+  }
+  send_response(client_fd, response);
+  ::close(client_fd);
+
+  if (options.log_requests) {
+    const long long micros =
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - start)
+            .count();
+    std::lock_guard<std::mutex> log_lock(ctx.log_mutex);
+    std::cerr << "[http] " << (parsed ? request.method : "BAD") << ' '
+              << (parsed ? request.path : "-") << " -> " << response.status
+              << " (" << micros << " us)\n"
+              << std::flush;
+  }
+}
+
+class FdQueue {
+ public:
+  void push(int fd) {
+    std::lock_guard<std::mutex> lock(mu_);
+    fds_.push_back(fd);
+    cv_.notify_one();
+  }
+
+  bool pop(int& fd) {
+    std::unique_lock<std::mutex> lock(mu_);
+    cv_.wait(lock, [this]() { return stop_ || head_ < fds_.size(); });
+    if (head_ >= fds_.size()) {
+      return false;
+    }
+    fd = fds_[head_++];
+    if (head_ >= 64 && head_ * 2 >= fds_.size()) {
+      fds_.erase(fds_.begin(), fds_.begin() + static_cast<std::ptrdiff_t>(head_));
+      head_ = 0;
+    }
+    return true;
+  }
+
+  void shutdown() {
+    std::lock_guard<std::mutex> lock(mu_);
+    stop_ = true;
+    cv_.notify_all();
+  }
+
+ private:
+  std::mutex mu_;
+  std::condition_variable cv_;
+  std::vector<int> fds_;
+  std::size_t head_ = 0;
+  bool stop_ = false;
+};
+
 }  // namespace
 
 int run_server(const ServerOptions& options) {
@@ -1094,19 +1193,39 @@ int run_server(const ServerOptions& options) {
     ::close(server_fd);
     return 1;
   }
-  if (::listen(server_fd, 16) < 0) {
+  if (::listen(server_fd, 64) < 0) {
     std::cerr << "ERROR: cannot listen: " << std::strerror(errno) << '\n';
     ::close(server_fd);
     return 1;
   }
 
+  const int workers =
+      options.threads < 1 ? 1 : (options.threads > 16 ? 16 : options.threads);
+
   std::cout << "\n  \033[1mWayfinder\033[0m - minimum-bus journey planner\n"
             << "  http://127.0.0.1:" << options.port << "\n"
             << "  serving " << options.web_root << "/ and "
-            << options.samples_root << "/  (Ctrl+C to stop)\n\n"
+            << options.samples_root << "/  ("
+            << (workers == 1 ? "single-threaded"
+                             : std::to_string(workers) + " worker threads")
+            << (options.log_requests ? ", logging" : "")
+            << ", Ctrl+C to stop)\n\n"
             << std::flush;
 
-  AppState state;
+  ServerContext ctx;
+  FdQueue queue;
+  std::vector<std::thread> pool;
+  if (workers > 1) {
+    pool.reserve(static_cast<std::size_t>(workers));
+    for (int i = 0; i < workers; ++i) {
+      pool.emplace_back([&]() {
+        int fd = -1;
+        while (queue.pop(fd)) {
+          serve_connection(options, ctx, fd);
+        }
+      });
+    }
+  }
 
   while (true) {
     sockaddr_in client{};
@@ -1121,20 +1240,18 @@ int run_server(const ServerOptions& options) {
       continue;
     }
 
-    timeval timeout{};
-    timeout.tv_sec = 10;
-    ::setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-    HttpRequest request;
-    HttpResponse response;
-    if (!read_request(client_fd, request)) {
-      api_error(response, 400, "malformed request");
+    if (workers == 1) {
+      serve_connection(options, ctx, client_fd);
     } else {
-      handle_request(options, state, request, response);
+      queue.push(client_fd);
     }
-    send_response(client_fd, response);
-    ::close(client_fd);
   }
+
+  queue.shutdown();
+  for (std::thread& t : pool) {
+    t.join();
+  }
+  return 0;
 }
 
 }  // namespace journey

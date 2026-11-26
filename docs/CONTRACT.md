@@ -25,7 +25,7 @@ interactive mode and never appears in batch output.
 An optional browser front-end is also available:
 
 ```bash
-./build/journey --serve [--port N] [--web DIR]
+./build/journey --serve [--port N] [--web DIR] [--threads N] [--log]
 ```
 
 It serves `web/` and a JSON API on `127.0.0.1` and answers journeys with the same

@@ -40,6 +40,8 @@ same PR that makes the choice. "Why" is the part you say out loud in the viva.
 | 33 | Stop names become tokens; original names live in `bmtc.json` | The frozen grammar splits on whitespace, but the UI should show "Kempegowda Bus Station" | Change the grammar to quoted names — breaks the frozen contract | Role 2 / UI |
 | 34 | Routes stay undirected even though GTFS has UP/DOWN patterns | The problem statement explicitly allows riding against the listed order; one name per route fits the contract | Duplicate routes with `_UP`/`_DOWN` — halves unique services | Role 1 |
 | 35 | No map tiles or third-party map library; real coordinates + local projection | Works offline and keeps the build dependency-free; attribution is a caption | Leaflet/OSM tiles — network dependency and extra licence surface | UI |
+| 36 | Light theme via `:root[data-theme="light"]` CSS variable overrides + `wayfinder.theme.v1` `localStorage` | Shares one stylesheet and SVG export path (`cssVar`) while preserving >= 5.02:1 WCAG AA contrast in both themes | Maintaining a separate light CSS file or duplicating JS colour tables | Role 3 |
+| 37 | Opt-in `--threads N` (`std::shared_mutex` around `AppState` + `FdQueue`) and `--log` on stderr in `server.cpp` | Keeps the default `--serve` path single-threaded and deterministic for demos while allowing concurrent reads (`/api/journey`, `/api/impact`, `/api/network`) under `--threads N` | Detaching per-request threads without bounding concurrency or mutating `AppState` unlocked | Role 2 / Role 3 |
 
 ## Perf log
 

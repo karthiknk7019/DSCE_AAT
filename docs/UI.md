@@ -24,11 +24,13 @@ make serve      # http://127.0.0.1:8080
 `make serve` is sugar for:
 
 ```bash
-./build/journey --serve [--port N] [--web DIR]
+./build/journey --serve [--port N] [--web DIR] [--threads N] [--log]
 ```
 
-The server binds to `127.0.0.1` only, serves `web/` and `samples/`, and has no
-dependencies beyond POSIX sockets. The batch mode is untouched:
+The server binds to `127.0.0.1` only, serves `web/` and `samples/`, defaults to
+single-threaded execution (`--threads 1`, up to `16` opt-in), and has no
+dependencies beyond POSIX sockets and C++17 threads. Pass `--log` to print one
+timing line per HTTP request to stderr. The batch mode is untouched:
 
 ```bash
 ./build/journey < samples/example1.txt

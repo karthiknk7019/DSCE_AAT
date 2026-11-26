@@ -743,6 +743,8 @@ function drawNetworkMap(viewport, width, height) {
     journeyStops.add(leg.to);
   }
 
+  const nodeFill = cssVar('--node-fill', '#0b1424');
+  const nodeStroke = cssVar('--node-stroke', 'rgba(148, 163, 184, 0.45)');
   for (const stop of state.stops) {
     const point = state.positions.get(stop);
     if (!point) {
@@ -755,12 +757,12 @@ function drawNetworkMap(viewport, width, height) {
       cy: point.y.toFixed(2),
       r: onJourney ? radius + 1.1 : radius,
       class: 'stop-node',
-      fill: onJourney ? colorFor((state.result.legs.find((leg) => leg.from === stop || leg.to === stop) || {}).route) : '#0b1424',
-      stroke: onJourney ? '#06121a' : 'rgba(148, 163, 184, 0.45)',
+      fill: onJourney ? colorFor((state.result.legs.find((leg) => leg.from === stop || leg.to === stop) || {}).route) : nodeFill,
+      stroke: onJourney ? '#06121a' : nodeStroke,
       'stroke-width': onJourney ? 1.2 : large ? 0.5 : 1,
     });
     if (!onJourney) {
-      node.setAttribute('fill', '#0b1424');
+      node.setAttribute('fill', nodeFill);
     }
     node.addEventListener('mouseenter', makeTooltip(stop));
     node.addEventListener('mouseleave', hideTooltip);
@@ -1037,6 +1039,7 @@ function drawLayerMap(viewport) {
   }
 
   const nodeLayer = svgEl('g');
+  const layerNodeFill = cssVar('--node-fill', '#081120');
   for (const [stop, point] of positions) {
     const depth = state.layerDepthByStop.get(stop) || 0;
     const color = DEPTH_COLORS[Math.min(depth, DEPTH_COLORS.length - 1)];
@@ -1046,7 +1049,7 @@ function drawLayerMap(viewport) {
       cy: point.y,
       r: radius,
       class: 'layer-node',
-      fill: depth === 0 ? color : '#081120',
+      fill: depth === 0 ? color : layerNodeFill,
       stroke: color,
       'stroke-width': depth === 0 ? 0 : 1.6,
     });
@@ -2860,8 +2863,52 @@ function exportPng() {
   img.src = url;
 }
 
+const THEME_STORAGE_KEY = 'wayfinder.theme.v1';
+
+function cssVar(name, fallback) {
+  const val = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return val || fallback;
+}
+
+function applyTheme(theme) {
+  const next = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, next);
+  } catch (_) {
+    // Ignore storage restrictions.
+  }
+  const btn = $('#themeBtn');
+  if (btn) {
+    btn.textContent = next === 'light' ? 'Dark' : 'Light';
+    btn.setAttribute('aria-pressed', String(next === 'light'));
+  }
+  if (state.network) {
+    renderMap();
+  }
+}
+
+function initTheme() {
+  let saved = 'dark';
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw === 'light' || raw === 'dark') {
+      saved = raw;
+    }
+  } catch (_) {
+    // Ignore storage restrictions.
+  }
+  applyTheme(saved);
+}
+
 function bindEvents() {
   initStopSearch();
+  $('#themeBtn').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    applyTheme(current === 'light' ? 'dark' : 'light');
+  });
   $('#findBtn').addEventListener('click', () => runQuery());
   for (const id of ['#fromInput', '#toInput']) {
     const input = $(id);
@@ -3178,6 +3225,7 @@ function bindEvents() {
 }
 
 async function init() {
+  initTheme();
   bindEvents();
   syncClearButtons();
 

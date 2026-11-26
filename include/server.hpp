@@ -15,6 +15,8 @@ struct ServerOptions {
   std::string web_root = "web";
   std::string samples_root = "samples";
   int port = 8080;
+  int threads = 1;
+  bool log_requests = false;
 };
 
 // Blocks until the process is killed. Returns 1 if the socket cannot be bound.

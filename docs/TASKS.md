@@ -41,10 +41,10 @@ ID order. Do not wait to be asked.**
 | U8 | P1 | Touch pinch-zoom and larger tap targets | done | Role 2 | `make && make test && make ui-test && bash tools/smoke.sh && node --check web/app.js` passed; two-finger pinch-zoom, 10 px touch tap-slop pan guard, and 390 px tap targets added (physical touch device not tested here) |
 | U9 | P1 | Persist a pasted network in `localStorage` | done | Role 3 (Antigravity) | `savePastedNetwork`/`loadSavedPastedNetwork`/`clearSavedPastedNetwork` in `web/app.js` + `#clearPaste` in `web/index.html`; reload restores name + routes, "Clear saved" removes it |
 | U10 | P2 | k-shortest / alternative journeys panel | unclaimed | Role 1 | new API field, tests, UI list; still BFS |
-| U11 | P2 | Server request log + optional `--threads N` | unclaimed | shared | opt-in; default remains single-threaded |
+| U11 | P2 | Server request log + optional `--threads N` | done | Role 2 & Role 3 (karthiknk7019) | `make && make test && make ui-test` passed; opt-in `--log` and `--threads N` (`1..16`, default single-threaded), `std::shared_mutex` protecting `AppState`, verified in `tools/ui_smoke.sh` |
 | U12 | P2 | Export the map as SVG/PNG | done | Role 3 (Antigravity) | `buildExportSvg`/`exportSvg`/`exportPng`/`triggerDownload` in `web/app.js`; `#exportSvgBtn` and `#exportPngBtn` in `.stage-actions`; brace/paren balance verified; SVG inlines CSS vars + bg rect; PNG rasterises via Canvas at device pixel ratio |
 | U13 | P2 | Deploy notes (systemd user unit, reverse proxy) | unclaimed | shared | documented only; loopback by default |
-| U14 | P2 | Light theme via CSS variables | unclaimed | Role 3 | toggle persists; contrast checked |
+| U14 | P2 | Light theme via CSS variables | done | Role 3 (karthiknk7019) | WCAG AA contrast verified (>= 5.02:1 across light/dark tokens), `#themeBtn` persisted via `wayfinder.theme.v1`, `node --check web/app.js` passed |
 | U15 | P0 | Realistic large-city sample: replace the uniform lattice in `samples/city-large.txt` with a seeded generator (corridors, hubs, feeders, uneven route lengths) | claimed | Hermes (Role 3 session) | generator committed; `make && make test && bash tools/smoke.sh` byte-exact; route-length and stop-degree distributions varied; contract limits respected |
 
 ### Real-data workstream

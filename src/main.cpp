@@ -10,23 +10,27 @@ namespace {
 
 void print_usage(std::ostream& out) {
   out << "usage: journey [input-file] | [--interactive [network-file]]\n"
-      << "       journey --serve [--port N] [--web DIR]\n"
+      << "       journey --serve [--port N] [--web DIR] [--threads N] [--log]\n"
       << "  no arguments    read a network and 'query' lines from stdin\n"
       << "  input-file      read a network and 'query' lines from a file\n"
       << "  --interactive   read a network, then prompt for From/To/closed\n"
-      << "  --serve         start the browser UI (default port 8080)\n";
+      << "  --serve         start the browser UI (default port 8080)\n"
+      << "  --threads N     opt-in worker threads for --serve (1..16, default 1)\n"
+      << "  --log           log each HTTP request to stderr in --serve mode\n";
 }
 
-bool parse_port(const std::string& text, int& port) {
+bool parse_int_range(const std::string& text, int min_val, int max_val,
+                     int& value) {
   if (text.empty()) {
     return false;
   }
   char* end = nullptr;
-  const long value = std::strtol(text.c_str(), &end, 10);
-  if (end == text.c_str() || *end != '\0' || value < 1 || value > 65535) {
+  const long parsed = std::strtol(text.c_str(), &end, 10);
+  if (end == text.c_str() || *end != '\0' || parsed < min_val ||
+      parsed > max_val) {
     return false;
   }
-  port = static_cast<int>(value);
+  value = static_cast<int>(parsed);
   return true;
 }
 
@@ -45,14 +49,23 @@ int main(int argc, char** argv) {
     for (int i = 2; i < argc; ++i) {
       const std::string arg = argv[i];
       if (arg == "--port" && i + 1 < argc) {
-        if (!parse_port(argv[++i], options.port)) {
+        if (!parse_int_range(argv[++i], 1, 65535, options.port)) {
           std::cerr << "ERROR: invalid port '" << argv[i] << "'\n";
           return 1;
         }
       } else if (arg == "--web" && i + 1 < argc) {
         options.web_root = argv[++i];
+      } else if (arg == "--threads" && i + 1 < argc) {
+        if (!parse_int_range(argv[++i], 1, 16, options.threads)) {
+          std::cerr << "ERROR: invalid thread count '" << argv[i]
+                    << "' (expected 1..16)\n";
+          return 1;
+        }
+      } else if (arg == "--log") {
+        options.log_requests = true;
       } else {
-        std::cerr << "usage: journey --serve [--port N] [--web DIR]\n";
+        std::cerr << "usage: journey --serve [--port N] [--web DIR] "
+                     "[--threads N] [--log]\n";
         return 1;
       }
     }

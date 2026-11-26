@@ -53,6 +53,8 @@ Implemented and manually verified (2026-11-26):
 - [x] run all parsed `query` lines sequentially and show a clickable result table (**U4**)
 - [x] accessibility pass: `:focus-visible` rings, form `<label>`s, dialog `aria-labelledby`, tablist/tabpanel keyboard arrows, live regions, non-colour cues, AA `--dim` contrast (**U7**)
 - [x] dense-map keyboard stop search: `#stopSearch` ARIA combobox (`F` shortcut), `#focusOverlay` pan/zoom highlight, and `#focusedStopBar` Set From/To (**R8**)
+- [x] light theme via CSS variables (`#themeBtn`, `wayfinder.theme.v1`, AA contrast >= 5.02:1) (**U14**)
+- [x] opt-in server request log (`--log`) and worker pool (`--threads N`, default single-threaded) (**U11**)
 - [x] `make ui-test` API smoke; screenshots in `docs/wayfinder*.png`
 
 Verified numbers on the i7-13620H demo machine:
@@ -192,10 +194,10 @@ in `docs/TASKS.md`, and put your name in the PR title.
 | # | Task | Size | Suggested owner | Acceptance |
 |---|---|---|---|---|
 | U10 | k-shortest / alternative journeys panel | L | Role 1 | new API field, tests, UI list; still BFS |
-| U11 | Server request log + optional `--threads N` | M | shared | opt-in; default remains single-threaded |
+| U11 | ~~Server request log + optional `--threads N`~~ **done by Role 2 & Role 3** | M | shared | opt-in; default remains single-threaded |
 | U12 | Export the map as SVG/PNG | M | Role 3 | client-side download; no new dependency |
 | U13 | Deploy notes (systemd user unit, reverse proxy) | S | shared | documented only; loopback by default |
-| U14 | Light theme via CSS variables | S | Role 3 | toggle persists; contrast checked |
+| U14 | ~~Light theme via CSS variables~~ **done by Role 3** | S | Role 3 | toggle persists; contrast checked |
 
 Do **not** add: accounts, a database, a map tile service, a routing library, or
 a graph library. They add setup risk and none of them help the viva.
