@@ -42,6 +42,7 @@ same PR that makes the choice. "Why" is the part you say out loud in the viva.
 | 35 | No map tiles or third-party map library; real coordinates + local projection | Works offline and keeps the build dependency-free; attribution is a caption | Leaflet/OSM tiles — network dependency and extra licence surface | UI |
 | 36 | Light theme via `:root[data-theme="light"]` CSS variable overrides + `wayfinder.theme.v1` `localStorage` | Shares one stylesheet and SVG export path (`cssVar`) while preserving >= 5.02:1 WCAG AA contrast in both themes | Maintaining a separate light CSS file or duplicating JS colour tables | Role 3 |
 | 37 | Opt-in `--threads N` (`std::shared_mutex` around `AppState` + `FdQueue`) and `--log` on stderr in `server.cpp` | Keeps the default `--serve` path single-threaded and deterministic for demos while allowing concurrent reads (`/api/journey`, `/api/impact`, `/api/network`) under `--threads N` | Detaching per-request threads without bounding concurrency or mutating `AppState` unlocked | Role 2 / Role 3 |
+| 38 | Merge the printed-map redesign as the visual base and port U4–U12/R8 into it, instead of stacking the redesign on the old UI | One design system is easier to defend than two; every teammate feature still exists, and the demo check proves it end to end. The dark half of U14 is deferred, not deleted: the redesign is light-only until someone writes the dark variable pass | Keeping the old dark UI and dropping the redesign, or maintaining both stylesheets | UI |
 
 ## Perf log
 

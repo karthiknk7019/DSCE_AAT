@@ -1,35 +1,36 @@
 # Handoff — current state
 
-Last updated: **2026-11-26, 13:25 IST**
+Last updated: **2026-11-26, 13:40 IST**
 
-`main` now has the browser UI, the teammate features U4–U12/R8, and the real
-BMTC sample. The planner redesign and the real geo map are pushed on
-`ui/bmtc-redesign` but **not merged**: they conflict with the teammate UI work.
+`main` now has one merged browser UI: the printed-map redesign, the real BMTC
+geo map, and every teammate feature from U4–U14/R8. The merge is `0a2ac9e`.
 This page is the short version for whoever picks it up next; the detailed map is
 `docs/UI-ROLES.md`, the user-facing tour is `docs/UI.md`.
 
 ## Git state
 
-- Branch: `main`; HEAD `0cab40c` (real BMTC data) plus this docs commit.
-- Review branch: `ui/bmtc-redesign` — 4 commits (`fccfc86`, `78ba616`,
-  `8e3a0a0`, `9424cb6`): real-data docs, the planner redesign + geo map, the
-  Act 2c browser check, and the seeded city generator.
-- The redesign must be rebased over `a35e02c` and merged by hand: `web/app.js`,
-  `web/index.html` and `web/style.css` conflict with U4–U12/R8. Do not drop the
-  teammate features. Task U16 in `docs/TASKS.md` tracks it.
+- Branch: `main`; the redesign merge is `0a2ac9e` (parents `4591382` and
+  `9424cb6`). The old `ui/bmtc-redesign` branch is kept for history; do not
+  merge it again.
+- The merge kept the redesign layout/typography/geo projection and wired the
+  teammate features into it: run-all queries (U4), hover highlight + tooltip
+  (U3/U5), accessibility attributes (U7), pinch/tap guards (U8),
+  `localStorage` for pasted networks (U9), `--threads`/`--log` (U11), SVG/PNG
+  export (U12), stop search + focus bar (R8).
+- One honest regression: U14's dark half. The redesign ships a single light
+  theme, so `#themeBtn` is gone and U14 is `blocked` until a dark CSS-variable
+  pass lands. The light tokens are still in the stylesheet.
 
 Recent commits on `main` (newest first):
 
 | SHA | Message |
 |---|---|
+| `0a2ac9e` | ui: merge the planner redesign and real BMTC geo map |
+| `4591382` | ui, server: add light theme (U14) and opt-in --log/--threads N (U11) |
+| `f254a38` | data: verify BMTC geo map, add standalone map renderer and screenshot |
+| `521e437` | docs: refresh the contributor start path, task board and handoff |
 | `0cab40c` | data: add real BMTC sample, importer, coverage check and geo map |
 | `a35e02c` | tools: add Act 2c browser demo check (U6) |
-| `5c68ffa` | ui: add dense-map keyboard stop search and focus overlay (R8) |
-| `a36bd61` | ui: export map as SVG and PNG (U12); docs: mark U12 done |
-| `564c49b` | ui: persist pasted network in localStorage (U9); docs: mark U5 & U9 done |
-| `7bf4d56` | ui: add accessibility focus rings, labels, ARIA, and non-colour cues (U7) |
-| `d3fe57c` | ui: add touch pinch-zoom, tap-slop guard, and 390px tap targets (U8) |
-| `0d47e1c` | ui: add route path hover tooltip (U5) |
 
 ## Verified on this machine
 
@@ -41,7 +42,7 @@ make test             # 15 test functions, perf 28 ms (limit 1000 ms)
 make ui-test          # API build/journey/closure/sweep/static all OK
 bash tools/smoke.sh   # 5/5 sample files byte-exact, including real BMTC
 python3 tools/check_bmtc.py  # OK: 400 routes, 12,325 appearances, 2,175 stops
-bash tools/ui_demo_check.sh  # Act 2c steps 1-6 green on ui/bmtc-redesign
+bash tools/ui_demo_check.sh  # Act 2c steps 1-6 green on the merged tree
 ```
 
 > **Note:** `src/server.cpp` requires POSIX sockets (`<arpa/inet.h>`).
@@ -92,22 +93,22 @@ The batch path is untouched behaviourally:
 1. `make && make test && make ui-test && bash tools/smoke.sh`
 2. `make serve`, open <http://127.0.0.1:8080>, run the seven steps in
    `docs/DEMO-SCRIPT.md` → Act 2c.
-3. Take a row from `docs/TASKS.md`: U16 (merge the redesign — P0) is the
-   critical path; R1, U10, U11, U13 and U14 are open. Specifications live in
-   `docs/UI-ROLES.md`.
+3. Take a row from `docs/TASKS.md`: R1, U10, U13 and U14 are open; U15 is
+   claimed. Specifications live in `docs/UI-ROLES.md`.
 
 ## Known gaps
 
-Nothing blocks the CLI demo. These are the honest weak spots:
+Nothing blocks the demo. These are the honest weak spots:
 
-- **Redesign branch not merged.** `ui/bmtc-redesign` has the refreshed planner
-  and the real geo map, but `web/` conflicts with U4–U12/R8. Resolve by hand and
-  keep both sides; do not force-push over `main`.
-- **Single-threaded server.** One request at a time, loopback only. Fine for a
+- **U14 dark theme is deferred.** The merged redesign (U16) is light-only; the
+  old `#themeBtn` and dark tokens are in history but not wired into the new
+  stylesheet. A dark CSS-variable pass is the remaining work.
+- **Single-threaded by default.** `--threads N` exists (U11), but the default
+  `--serve` path still handles one request at a time on loopback. Fine for a
   demo; not a hosted service.
-- **Browser automation exists but is UI-version-specific.** `make ui-test`
-  checks the API; `bash tools/ui_demo_check.sh` drives Act 2c in Playwright.
-  Its selectors track `ui/bmtc-redesign`, so re-run it after any `web/` merge.
+- **Browser automation is UI-version-specific.** `make ui-test` checks the API;
+  `bash tools/ui_demo_check.sh` drives Act 2c in Playwright. Re-run it after any
+  `web/` merge — the selectors track the current markup.
 - **Accessibility pass implemented (U7).** Keyboard focus, labels, ARIA and
   non-colour cues are in; an automated `axe` run is still worth doing on the
   final merged UI.

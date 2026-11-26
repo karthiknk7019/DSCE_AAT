@@ -44,7 +44,7 @@ ID order. Do not wait to be asked.**
 | U11 | P2 | Server request log + optional `--threads N` | done | Role 2 & Role 3 (karthiknk7019) | `make && make test && make ui-test` passed; opt-in `--log` and `--threads N` (`1..16`, default single-threaded), `std::shared_mutex` protecting `AppState`, verified in `tools/ui_smoke.sh` |
 | U12 | P2 | Export the map as SVG/PNG | done | Role 3 (Antigravity) | `buildExportSvg`/`exportSvg`/`exportPng`/`triggerDownload` in `web/app.js`; `#exportSvgBtn` and `#exportPngBtn` in `.stage-actions`; brace/paren balance verified; SVG inlines CSS vars + bg rect; PNG rasterises via Canvas at device pixel ratio |
 | U13 | P2 | Deploy notes (systemd user unit, reverse proxy) | unclaimed | shared | documented only; loopback by default |
-| U14 | P2 | Light theme via CSS variables | done | Role 3 (karthiknk7019) | WCAG AA contrast verified (>= 5.02:1 across light/dark tokens), `#themeBtn` persisted via `wayfinder.theme.v1`, `node --check web/app.js` passed |
+| U14 | P2 | Light theme via CSS variables | blocked | Role 3 (karthiknk7019) | Light tokens landed in `4591382`, but the merged redesign (U16) ships one light theme: the `#themeBtn` dark half is not wired into the new stylesheet. Needs a dark-variable pass before it can be called done again |
 | U15 | P0 | Realistic large-city sample: replace the uniform lattice in `samples/city-large.txt` with a seeded generator (corridors, hubs, feeders, uneven route lengths) | claimed | Hermes (Role 3 session) | generator committed; `make && make test && bash tools/smoke.sh` byte-exact; route-length and stop-degree distributions varied; contract limits respected |
 
 ### Real-data workstream
@@ -56,7 +56,7 @@ remaining R1 work is visual verification of the geo map on the redesign branch
 
 | # | Pri | Task | Status | Owner | Acceptance / evidence |
 |---|---|---|---|---|---|
-| R1 | P0 | Verify the real BMTC map at 1512×950 and 760×1000 | claimed | concurrent agent session | 400 routes / 2,175 stops load; Jayanagar → Hebbal draws 2 legs; no console errors; screenshot updated |
+| R1 | P0 | Verify the real BMTC map at 1512×950 and 760×1000 | claimed | concurrent agent session | 400 routes / 2,175 stops load; Jayanagar → Hebbal draws 2 legs; no console errors; screenshot updated. Note: the geo map is now merged (`0a2ac9e`); ready for the owner to close |
 | R2 | P1 | Real route shapes from GTFS `shapes.txt` | unclaimed | Role 1 or UI | routes follow roads; JSON stays < 2 MB; shapes simplified and attributed |
 | R3 | P2 | Scale bar, north arrow, 8 landmark labels | unclaimed | Role 3 | static map furniture; hidden outside geo mode |
 | R4 | P2 | Data refresh script + checksum/provenance | unclaimed | Role 3 | rerun produces identical sample or reports a diff; licence/date recorded |
@@ -69,7 +69,7 @@ remaining R1 work is visual verification of the geo map on the redesign branch
 
 | # | Pri | Task | Status | Owner | Acceptance / evidence |
 |---|---|---|---|---|---|
-| U16 | P0 | Merge the planner redesign + real BMTC geo map | blocked | Hermes agent | branch `ui/bmtc-redesign` pushed (4 commits); `make`, `make test`, `bash tools/smoke.sh`, `bash tools/ui_demo_check.sh` green on the branch; conflicts with U4–U12 in `web/` must be resolved before it can land |
+| U16 | P0 | Merge the planner redesign + real BMTC geo map | done | Hermes agent | `0a2ac9e` merged into `main`; `make`, `make test`, `make ui-test`, `bash tools/smoke.sh` 5/5, `python3 tools/check_bmtc.py` and `bash tools/ui_demo_check.sh` all pass on the merged tree |
 
 ## Notes
 
