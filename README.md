@@ -72,7 +72,7 @@ Enter a query by hand (interactive extension):
 # From: Jayanagar
 # To:   Whitefield
 # Closed routes (space separated, blank = none):
-# -> JOURNEY 2 buses: 365 to Majestic, then V1 to Whitefield
+# -> JOURNEY 2 buses: 210 to Majestic, then V1 to Whitefield
 ```
 
 Input format and exact output: [docs/CONTRACT.md](docs/CONTRACT.md).

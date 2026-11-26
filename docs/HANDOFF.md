@@ -8,17 +8,19 @@ the short version for whoever picks it up next; the detailed map is
 
 ## Git state
 
-- Branch: `main`, synced with `origin/main` (`d0594c0`).
-- The UI workstream is committed and pushed as
+- Branch: `main`, synced with `origin/main`; the UI workstream is
   `d0594c0 ui: add browser front-end, BFS layer view and closure sweep`.
 - It was rebased over two teammate commits: `84e9634` (interactive route
   details) and `cc67512` (hand-written `StopIdMap`). The only source conflict
   was `src/graph.cpp`: the `find_journey_stats` hooks were re-applied on top of
   `StopIdMap`, keeping the compact-ID BFS and the optional stats path. Both
   perf rows in `docs/DECISIONS.md` were kept.
-- Re-verified after the rebase: `make` clean, `make test` passes, `make
-  ui-test` OK, `bash tools/smoke.sh` 4/4, the 5,000-network oracle passes, and
-  batch output is byte-exact.
+- `5edc520` added deterministic lexicographic tie-breaking. It changes *which*
+  optimal journey is printed, never the bus count, so
+  `samples/expected-city*.txt` were regenerated and the demo route references
+  updated from `365` to `210`.
+- Latest verification: `make` clean, `make test`, `make ui-test`, and
+  `bash tools/smoke.sh` 4/4 all pass; the 5,000-network oracle also passes.
 
 ## Verified on this machine
 

@@ -90,7 +90,7 @@ make serve      # http://127.0.0.1:8080
 
 The tab opens on `samples/city.txt` and already shows Jayanagar → Whitefield.
 
-1. Point at the result: **2 buses**, 365 then V1, change at Majestic.
+1. Point at the result: **2 buses**, 210 then V1, change at Majestic.
 2. Point at **Why this is minimal**: the layer histogram and the sentence
    "the destination first appears in layer 2". Say: "Every stop reachable with
    one bus is in layer 1. Whitefield is not there, so no one-bus journey exists."

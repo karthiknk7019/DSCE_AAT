@@ -146,7 +146,7 @@ tools/ui_smoke.sh      starts a server and checks the API end to end
 ## Two-minute demo
 
 1. `make serve`, open the page. It loads `samples/city.txt` and asks
-   Jayanagar → Whitefield: **2 buses**, 365 then V1, change at Majestic.
+   Jayanagar → Whitefield: **2 buses**, 210 then V1, change at Majestic.
 2. Point at **Why this is minimal**: layers 0, 1, 2; the destination is in
    layer 2 and absent from 0–1.
 3. Click **BFS layers**. The page redraws the source at the centre with one

@@ -1,5 +1,5 @@
 JOURNEY 2 buses
-  1: 365 Jayanagar -> Majestic
+  1: 210 Jayanagar -> Majestic
   2: V1 Majestic -> Whitefield
 
 NO JOURNEY
