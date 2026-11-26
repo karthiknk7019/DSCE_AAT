@@ -52,6 +52,7 @@ UI timings from the same machine (server-side search only, measured in
 | 17 | Compact integer stop IDs + `IntQueue` in `find_journey` | Avoids per-stop string copies and extra hash maps during BFS | String-keyed `buses_used` / `parent_*` maps + `StopQueue` of `std::string` | Role 1 |
 | 18 | Hand-written open-addressing `StopIdMap` (FNV-1a + linear probing) for BFS visited stops | Flat contiguous slots with non-owning `const std::string*` keys; makes Module-5 hashing explicit | `std::unordered_map<std::string, int>` node allocations per visited stop | Role 1 |
 | 19 | Stop-by-stop route trace and transfer summary in `--interactive` mode only | Shows intermediate stops, total stops, and transfer points for demos/UI without breaking byte-exact batch stdout | Changing batch `run_cli` stdout format (breaks `CONTRACT.md` & `smoke.sh`) | Role 2 |
+| 20 | Lexicographical tie-breaking via layer-ranked BFS + in-place merge sort in `src/graph.cpp` | Processes each boarding layer in ascending prefix-rank order so equal-bus ties deterministically pick the lexicographically smallest route sequence | Unordered BFS tie-breaking or `<algorithm>` `std::sort` | Role 1 |
 
 ## How to use this in the demo
 

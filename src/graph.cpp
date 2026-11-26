@@ -64,8 +64,9 @@ class StopIdMap {
     slots_.resize(cap);
   }
 
-  // Inserts `key` with `new_id` if absent; returns true if inserted.
-  bool insert_if_absent(const std::string& key, int new_id) {
+  // Inserts `key` with `new_id` if absent; returns its ID and whether it was
+  // newly inserted.
+  std::pair<int, bool> insert_or_get(const std::string& key, int new_id) {
     if (size_ * 2 >= slots_.size()) {
       rehash(slots_.size() * 2);
     }
@@ -74,13 +75,13 @@ class StopIdMap {
     std::size_t idx = h & mask;
     while (slots_[idx].key != nullptr) {
       if (slots_[idx].hash == h && *slots_[idx].key == key) {
-        return false;
+        return {slots_[idx].id, false};
       }
       idx = (idx + 1) & mask;
     }
     slots_[idx] = {&key, h, new_id};
     ++size_;
-    return true;
+    return {new_id, true};
   }
 
  private:
@@ -109,6 +110,38 @@ class StopIdMap {
   std::vector<Slot> slots_;
   std::size_t size_ = 0;
 };
+
+// In-place merge sort for small layer vectors (avoids <algorithm> dependency).
+template <typename Less>
+void sort_layer(std::vector<int>& items, std::vector<int>& scratch,
+                std::size_t left, std::size_t right, Less less) {
+  if (right - left <= 1) {
+    return;
+  }
+  const std::size_t mid = left + (right - left) / 2;
+  sort_layer(items, scratch, left, mid, less);
+  sort_layer(items, scratch, mid, right, less);
+
+  std::size_t i = left;
+  std::size_t j = mid;
+  std::size_t k = left;
+  while (i < mid && j < right) {
+    if (less(items[j], items[i])) {
+      scratch[k++] = items[j++];
+    } else {
+      scratch[k++] = items[i++];
+    }
+  }
+  while (i < mid) {
+    scratch[k++] = items[i++];
+  }
+  while (j < right) {
+    scratch[k++] = items[j++];
+  }
+  for (std::size_t p = left; p < right; ++p) {
+    items[p] = scratch[p];
+  }
+}
 
 }  // namespace
 
@@ -188,16 +221,18 @@ bool search(const Network& network, const std::string& source,
   StopIdMap visited(hint);
 
   std::vector<const std::string*> id_to_name;
+  std::vector<int> stop_layer;
+  std::vector<int> stop_rank;
   std::vector<int> parent_stop;
   std::vector<int> parent_route;
-  std::vector<int> depth;  // buses needed to reach each visited stop
   std::vector<char> route_expanded(network.routes.size(), 0);
 
-  visited.insert_if_absent(source, 0);
+  visited.insert_or_get(source, 0);
   id_to_name.push_back(&source);
+  stop_layer.push_back(0);
+  stop_rank.push_back(0);
   parent_stop.push_back(-1);
   parent_route.push_back(-1);
-  depth.push_back(0);
   if (stats != nullptr) {
     stats->reached_stops.push_back(*id_to_name.front());
     stats->reached_buses.push_back(0);
@@ -206,73 +241,132 @@ bool search(const Network& network, const std::string& source,
   IntQueue queue(network.stop_to_routes.size());
   queue.push(0);
 
+  int dst_id = -1;
+  int current_layer_num = 0;
+  std::size_t layer_count = 1;
+  std::vector<int> next_layer;
+  std::vector<int> sort_scratch;
+
   while (!queue.empty()) {
-    const int stop_id = queue.pop();
-    const std::string& stop_name = *id_to_name[static_cast<std::size_t>(stop_id)];
+    next_layer.clear();
 
-    const auto routes_it = network.stop_to_routes.find(stop_name);
-    if (routes_it == network.stop_to_routes.end()) {
-      continue;
-    }
+    // Process the entire current boarding layer in ascending prefix-rank order
+    // so ties always prefer the lexicographically smallest route sequence.
+    for (std::size_t q_i = 0; q_i < layer_count; ++q_i) {
+      const int stop_id = queue.pop();
+      const std::string& stop_name =
+          *id_to_name[static_cast<std::size_t>(stop_id)];
 
-    for (const int route_index : routes_it->second) {
-      if (route_expanded[route_index] != 0) {
+      const auto routes_it = network.stop_to_routes.find(stop_name);
+      if (routes_it == network.stop_to_routes.end()) {
         continue;
       }
-      route_expanded[route_index] = 1;
 
-      const Route& route = network.routes[route_index];
-      if (!inactive.empty() && inactive.find(route.name) != inactive.end()) {
-        if (stats != nullptr) {
-          ++stats->inactive_routes_skipped;
+      for (const int route_index : routes_it->second) {
+        if (route_expanded[route_index] != 0) {
+          continue;
         }
-        continue;
-      }
+        route_expanded[route_index] = 1;
 
-      if (stats != nullptr) {
-        stats->expanded_routes.push_back(route.name);
-        stats->expanded_route_buses.push_back(
-            depth[static_cast<std::size_t>(stop_id)]);
-      }
-
-      for (const std::string& next : route.stops) {
-        const int next_id = static_cast<int>(id_to_name.size());
-        if (!visited.insert_if_absent(next, next_id)) {
+        const Route& route = network.routes[route_index];
+        if (!inactive.empty() && inactive.find(route.name) != inactive.end()) {
+          if (stats != nullptr) {
+            ++stats->inactive_routes_skipped;
+          }
           continue;
         }
 
-        // One more bus, no matter how many stops this route crosses.
-        const int next_depth = depth[static_cast<std::size_t>(stop_id)] + 1;
-        id_to_name.push_back(&next);
-        parent_stop.push_back(stop_id);
-        parent_route.push_back(route_index);
-        depth.push_back(next_depth);
         if (stats != nullptr) {
-          stats->reached_stops.push_back(*id_to_name.back());
-          stats->reached_buses.push_back(next_depth);
+          stats->expanded_routes.push_back(route.name);
+          stats->expanded_route_buses.push_back(current_layer_num);
         }
 
-        if (next == destination) {
-          int cur = next_id;
-          while (cur != 0) {
-            const std::size_t cur_idx = static_cast<std::size_t>(cur);
-            const int prev = parent_stop[cur_idx];
-            const int r_idx = parent_route[cur_idx];
-            out.legs.push_back(
-                {network.routes[r_idx].name,
-                 *id_to_name[static_cast<std::size_t>(prev)],
-                 *id_to_name[cur_idx]});
-            cur = prev;
-          }
-          for (std::size_t l = 0, r = out.legs.size(); l + 1 < r; ++l, --r) {
-            std::swap(out.legs[l], out.legs[r - 1]);
-          }
-          return true;
-        }
+        for (const std::string& next : route.stops) {
+          const int candidate_id = static_cast<int>(id_to_name.size());
+          const auto [next_id, inserted] =
+              visited.insert_or_get(next, candidate_id);
+          const std::size_t next_idx = static_cast<std::size_t>(next_id);
 
-        queue.push(next_id);
+          if (inserted) {
+            id_to_name.push_back(&next);
+            stop_layer.push_back(current_layer_num + 1);
+            stop_rank.push_back(0);
+            parent_stop.push_back(stop_id);
+            parent_route.push_back(route_index);
+            next_layer.push_back(next_id);
+            if (stats != nullptr) {
+              stats->reached_stops.push_back(*id_to_name.back());
+              stats->reached_buses.push_back(current_layer_num + 1);
+            }
+            if (next == destination) {
+              dst_id = next_id;
+            }
+          } else if (stop_layer[next_idx] == current_layer_num + 1) {
+            // Same boarding count: keep the lexicographically smaller prefix.
+            const int cur_rank =
+                stop_rank[static_cast<std::size_t>(parent_stop[next_idx])];
+            const int new_rank =
+                stop_rank[static_cast<std::size_t>(stop_id)];
+            const std::string& cur_rname =
+                network.routes[parent_route[next_idx]].name;
+            if (new_rank < cur_rank ||
+                (new_rank == cur_rank && route.name < cur_rname)) {
+              parent_stop[next_idx] = stop_id;
+              parent_route[next_idx] = route_index;
+            }
+          }
+        }
       }
     }
+
+    if (dst_id != -1) {
+      int cur = dst_id;
+      while (cur != 0) {
+        const std::size_t cur_idx = static_cast<std::size_t>(cur);
+        const int prev = parent_stop[cur_idx];
+        const int r_idx = parent_route[cur_idx];
+        out.legs.push_back(
+            {network.routes[r_idx].name,
+             *id_to_name[static_cast<std::size_t>(prev)],
+             *id_to_name[cur_idx]});
+        cur = prev;
+      }
+      for (std::size_t l = 0, r = out.legs.size(); l + 1 < r; ++l, --r) {
+        std::swap(out.legs[l], out.legs[r - 1]);
+      }
+      return true;
+    }
+
+    if (next_layer.empty()) {
+      break;
+    }
+
+    auto lex_less = [&](int a, int b) {
+      const std::size_t ai = static_cast<std::size_t>(a);
+      const std::size_t bi = static_cast<std::size_t>(b);
+      const int ra = stop_rank[static_cast<std::size_t>(parent_stop[ai])];
+      const int rb = stop_rank[static_cast<std::size_t>(parent_stop[bi])];
+      if (ra != rb) {
+        return ra < rb;
+      }
+      return network.routes[parent_route[ai]].name <
+             network.routes[parent_route[bi]].name;
+    };
+
+    sort_scratch.resize(next_layer.size());
+    sort_layer(next_layer, sort_scratch, 0, next_layer.size(), lex_less);
+
+    int rank = 0;
+    for (std::size_t i = 0; i < next_layer.size(); ++i) {
+      if (i > 0 && lex_less(next_layer[i - 1], next_layer[i])) {
+        ++rank;
+      }
+      stop_rank[static_cast<std::size_t>(next_layer[i])] = rank;
+      queue.push(next_layer[i]);
+    }
+
+    layer_count = next_layer.size();
+    ++current_layer_num;
   }
 
   return false;
