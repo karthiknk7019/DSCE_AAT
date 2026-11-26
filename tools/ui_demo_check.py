@@ -145,11 +145,11 @@ def main():
             with step("1-result"):
                 # Act 2c step 1: 2 buses, 210 then V1, change at Majestic.
                 expect(big).to_have_text("2", timeout=15000)
-                pills = page.locator("#resultCard .result-route .route-pill")
+                pills = page.locator("#resultCard .it-leg .route-plate")
                 expect(pills).to_have_count(2)
                 assert pills.all_inner_texts() == ["210", "V1"], pills.all_inner_texts()
-                expect(page.locator("#resultCard .transfer-note")).to_contain_text(
-                    "Change at Majestic"
+                expect(page.locator("#resultCard .card-foot .micro")).to_contain_text(
+                    "1 change on the way"
                 )
 
             with step("2-proof"):
@@ -168,7 +168,7 @@ def main():
                 page.locator('.seg button[data-mode="layers"]').click()
                 expect(page.locator("#mapCaption")).to_contain_text("BFS from", timeout=10000)
                 expect(page.locator("#mapLegend")).to_be_visible()
-                expect(page.locator("#mapLegend .ml-title")).to_have_text("one ring per bus")
+                expect(page.locator("#mapLegend .ml-title")).to_have_text("BFS layers")
                 depth = page.evaluate("state.layerDepthByStop.get('Whitefield')")
                 assert depth == 2, f"Whitefield layer={depth}, expected 2"
                 assert page.locator(".layer-node").count() > 0, "layer map drew no nodes"
@@ -213,8 +213,8 @@ def main():
                 page.locator('.seg button[data-mode="network"]').click()
                 v1 = page.locator(".route-row", has=page.locator(".rname", has_text=re.compile(r"^V1$")))
                 v1.click()
-                expect(page.locator("#resultCard .no-route-title")).to_have_text(
-                    "No journey", timeout=10000
+                expect(page.locator("#resultCard .big-label")).to_contain_text(
+                    "no route", timeout=10000
                 )
                 expect(page.locator("#resultCard .transfer-note")).to_contain_text(
                     "1 closed route filtered"
@@ -224,7 +224,7 @@ def main():
                 # Step 5: reopen V1, sweep every route, V1 is the only critical one.
                 v1.click()
                 expect(big).to_have_text("2", timeout=10000)
-                page.get_by_role("button", name="Run sweep", exact=True).click()
+                page.get_by_role("button", name="Test closures", exact=True).click()
                 expect(page.locator(".impact-chip.bad")).to_have_text(
                     "1 critical route", timeout=15000
                 )
@@ -238,11 +238,10 @@ def main():
                 expect(page.locator("#networkDialog")).to_be_visible()
                 page.locator(".sample-card", has_text="Buses ≠ stops").click()
                 expect(page.locator("#networkDialog")).to_be_hidden()
+                first_plate = page.locator("#resultCard .it-leg .route-plate").first
+                expect(first_plate).to_have_text("Outer", timeout=15000)
                 expect(big).to_have_text("2", timeout=10000)
-                expect(page.locator("#resultCard .chain-meta")).to_contain_text(
-                    "10 stops on these routes"
-                )
-                pills = page.locator("#resultCard .result-route .route-pill")
+                pills = page.locator("#resultCard .it-leg .route-plate")
                 assert pills.all_inner_texts() == ["Outer", "Outer2"], pills.all_inner_texts()
 
             with step("console"):

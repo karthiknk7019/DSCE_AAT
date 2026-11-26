@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Wayfinder — minimum-bus journey planner</title>
-  <meta name="description" content="A minimum-bus journey planner with a live BFS layer view. Data Structures and its Applications, DSCE.">
+  <title>Wayfinder — fewest buses</title>
+  <meta name="description" content="A minimum-bus journey planner for the BMTC network, with the BFS layers that prove the answer.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -12,154 +12,140 @@
   <div class="app">
     <header class="topbar">
       <div class="brand">
-        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-          <circle cx="16" cy="16" r="12.4" fill="none" stroke="currentColor" stroke-width="2.1"/>
-          <path d="M3.2 16h25.6" stroke="currentColor" stroke-width="2.1"/>
-          <circle cx="16" cy="16" r="3.2" fill="currentColor"/>
+        <svg class="brand-mark" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="10" cy="10" r="7.3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2.7 10h14.6" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="10" cy="10" r="2.5" fill="#d9481c"/>
         </svg>
-        <div class="brand-text">
-          <div class="brand-name">Wayfinder</div>
-          <div class="brand-sub">minimum-bus journey planner</div>
-        </div>
+        <span class="brand-name">Wayfinder</span>
+        <span class="brand-tag">fewest buses</span>
       </div>
 
       <button type="button" class="network-chip" id="openNetwork" title="Change network" aria-haspopup="dialog">
-        <span class="dot" aria-hidden="true"></span>
+        <span class="chip-k">Network</span>
         <span class="chip-name" id="chipName">loading…</span>
+        <span class="chip-sep" aria-hidden="true"></span>
         <span class="chip-meta" id="chipMeta">—</span>
-        <svg viewBox="0 0 12 12" class="chevron" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <svg class="chevron" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M2 3.6 5 6.6l3-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
       </button>
 
       <div class="topbar-right">
-        <span class="live-pill"><i aria-hidden="true"></i>BFS engine</span>
-        <button type="button" class="ghost" id="themeBtn" title="Toggle light/dark theme" aria-pressed="false">Light</button>
+        <div class="seg" role="tablist" aria-label="Map mode">
+          <button type="button" id="tabNetwork" role="tab" data-mode="network" class="on" aria-selected="true" aria-controls="mapWrap">Route map</button>
+          <button type="button" id="tabLayers" role="tab" data-mode="layers" aria-selected="false" aria-controls="mapWrap" tabindex="-1">BFS layers</button>
+        </div>
         <button type="button" class="ghost" id="shareBtn" title="Copy a link to this query">Share</button>
       </div>
     </header>
 
     <main class="layout">
+      <div class="map-wrap" id="mapWrap" role="tabpanel" aria-labelledby="tabNetwork">
+        <svg id="map" role="img" aria-label="Bus network map"></svg>
+        <div class="stop-search" id="stopSearchWrap">
+          <label class="sr-only" for="stopSearch">Find stop on map</label>
+          <input
+            id="stopSearch"
+            type="search"
+            role="combobox"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Find stop (F)"
+            aria-label="Find stop on map"
+            aria-autocomplete="list"
+            aria-expanded="false"
+            aria-controls="stopSearchResults"
+          >
+          <div class="stop-search-menu" id="stopSearchResults" role="listbox" aria-label="Matching stops" hidden></div>
+        </div>
+        <div class="map-hint">Click a stop to set From, then To</div>
+        <div class="map-caption" id="mapCaption"></div>
+        <div class="map-legend" id="mapLegend" hidden></div>
+        <div class="map-empty" id="mapEmpty" hidden></div>
+        <div class="focus-bar" id="focusedStopBar" role="region" aria-label="Focused stop" hidden>
+          <span class="focus-stop-name" id="focusedStopName"></span>
+          <span class="focus-stop-meta" id="focusedStopMeta"></span>
+          <button type="button" class="focus-act" id="focusSetFrom">Set From</button>
+          <button type="button" class="focus-act" id="focusSetTo">Set To</button>
+          <button type="button" class="focus-close" id="focusClear" aria-label="Clear focused stop">×</button>
+        </div>
+        <div class="map-controls">
+          <span class="stage-hint" id="stageHint">drag to pan · scroll to zoom</span>
+          <button type="button" class="map-ctl" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+          <button type="button" class="map-ctl" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+          <button type="button" class="map-ctl fit" id="zoomFit" title="Fit the network to the view" aria-label="Fit to view">Fit</button>
+          <button type="button" class="map-ctl fit" id="exportSvgBtn" title="Download map as SVG" aria-label="Download map as SVG">SVG ↓</button>
+          <button type="button" class="map-ctl fit" id="exportPngBtn" title="Download map as PNG" aria-label="Download map as PNG">PNG ↓</button>
+        </div>
+        <div class="tooltip" id="tooltip" hidden></div>
+      </div>
+
       <aside class="rail rail-left" aria-label="Journey planner and route closures">
-        <section class="panel plan-panel">
-          <div class="panel-head">
-            <h2>Plan a journey</h2>
-            <span class="tag">fewest buses</span>
+        <section class="plan">
+          <div class="plan-head">
+            <h1>Plan a journey</h1>
+            <p>Fewest buses, not fewest stops.</p>
           </div>
 
-          <div class="field">
-            <label class="field-label" for="fromInput">From</label>
-            <div class="input-wrap">
-              <span class="pin pin-from" aria-hidden="true"></span>
+          <div class="od">
+            <div class="od-line" aria-hidden="true"></div>
+
+            <div class="od-row">
+              <span class="od-node start" aria-hidden="true"></span>
+              <label class="od-label" for="fromInput">From</label>
               <input id="fromInput" list="stopList" autocomplete="off" spellcheck="false" placeholder="Pick a stop">
               <button type="button" class="clear-input" data-clear="from" aria-label="Clear origin" hidden>×</button>
             </div>
-          </div>
 
-          <button type="button" class="swap-btn" id="swapBtn" title="Swap origin and destination (S)" aria-label="Swap origin and destination">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3v9m0 0L1.7 9.7M4 12l2.3-2.3M12 13V4m0 0 2.3 2.3M12 4 9.7 6.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+            <div class="od-rule" aria-hidden="true"></div>
 
-          <div class="field">
-            <label class="field-label" for="toInput">To</label>
-            <div class="input-wrap">
-              <span class="pin pin-to" aria-hidden="true"></span>
+            <div class="od-row">
+              <span class="od-node end" aria-hidden="true"></span>
+              <label class="od-label" for="toInput">To</label>
               <input id="toInput" list="stopList" autocomplete="off" spellcheck="false" placeholder="Pick a stop">
               <button type="button" class="clear-input" data-clear="to" aria-label="Clear destination" hidden>×</button>
             </div>
+
+            <button type="button" class="swap-btn" id="swapBtn" title="Swap From and To (S)" aria-label="Swap From and To">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M4.2 3.4v9.2M4.2 12.6 1.8 10.2M4.2 12.6l2.4-2.4M11.8 12.6V3.4M11.8 3.4 9.4 5.8M11.8 3.4l2.4 2.4"
+                      fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
           </div>
 
           <datalist id="stopList"></datalist>
 
-          <button type="button" class="primary" id="findBtn">
-            Find journey <kbd>↵</kbd>
-          </button>
+          <button type="button" class="primary" id="findBtn">Find journey <kbd>↵</kbd></button>
           <div class="field-error" id="formError" role="alert" hidden></div>
 
           <div class="quick-pairs" id="quickPairs"></div>
         </section>
 
-        <section class="panel routes-panel">
-          <div class="panel-head">
+        <section class="routes">
+          <div class="section-head">
             <h2>Routes</h2>
             <div class="head-tools">
-              <span class="closed-count" id="closedCount">none closed</span>
-              <button type="button" class="link" id="clearClosed">clear</button>
+              <span id="closedCount">none closed</span>
+              <button type="button" class="link" id="clearClosed">Clear</button>
             </div>
           </div>
-          <p class="micro">Click a route to close it. Closures are applied per query; the index is never rebuilt.</p>
+          <p class="micro">Click a route to close it for this query. The index is never rebuilt.</p>
           <div class="route-list" id="routeList"></div>
         </section>
-
-        <div class="rail-foot">
-          <span class="mono">O(A)</span> per query · hand-written queue
-        </div>
       </aside>
-
-      <section class="stage" aria-label="Interactive network map">
-        <div class="stage-bar">
-          <div class="seg" role="tablist" aria-label="Map mode">
-            <button type="button" id="tabNetwork" role="tab" data-mode="network" class="on" aria-selected="true" aria-controls="mapWrap">Route map</button>
-            <button type="button" id="tabLayers" role="tab" data-mode="layers" aria-selected="false" aria-controls="mapWrap" tabindex="-1">BFS layers</button>
-          </div>
-          <div class="stop-search" id="stopSearchWrap">
-            <label class="sr-only" for="stopSearch">Find stop on map</label>
-            <input
-              id="stopSearch"
-              type="search"
-              role="combobox"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="Find stop (F)"
-              aria-label="Find stop on map"
-              aria-autocomplete="list"
-              aria-expanded="false"
-              aria-controls="stopSearchResults"
-            >
-            <div class="stop-search-menu" id="stopSearchResults" role="listbox" aria-label="Matching stops" hidden></div>
-          </div>
-          <div class="stage-actions">
-            <span class="stage-hint" id="stageHint">drag to pan · scroll to zoom</span>
-            <button type="button" class="icon-btn" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
-            <button type="button" class="icon-btn" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
-            <button type="button" class="icon-btn wide" id="zoomFit" title="Fit to view">Fit</button>
-            <button type="button" class="icon-btn wide" id="exportSvgBtn" title="Download map as SVG" aria-label="Download map as SVG">SVG ↓</button>
-            <button type="button" class="icon-btn wide" id="exportPngBtn" title="Download map as PNG" aria-label="Download map as PNG">PNG ↓</button>
-          </div>
-        </div>
-
-        <div class="map-wrap" id="mapWrap" role="tabpanel" aria-labelledby="tabNetwork">
-          <svg id="map" role="img" aria-label="Network map"></svg>
-          <div class="focus-bar" id="focusedStopBar" role="region" aria-label="Focused stop" hidden>
-            <span class="focus-stop-name" id="focusedStopName"></span>
-            <span class="focus-stop-meta" id="focusedStopMeta"></span>
-            <button type="button" class="focus-act" id="focusSetFrom">Set From</button>
-            <button type="button" class="focus-act" id="focusSetTo">Set To</button>
-            <button type="button" class="focus-close" id="focusClear" aria-label="Clear focused stop">×</button>
-          </div>
-          <div class="tooltip" id="tooltip" hidden></div>
-          <div class="map-legend" id="mapLegend" hidden></div>
-          <div class="map-caption" id="mapCaption"></div>
-          <div class="map-hint">click a stop to set From, then To</div>
-          <div class="map-empty" id="mapEmpty" hidden></div>
-        </div>
-      </section>
 
       <aside class="rail rail-right" id="side" aria-label="Journey results and analysis">
         <div class="empty-state" id="emptyState">
-          <div class="empty-glyph" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 5"/>
-              <circle cx="32" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/>
-              <path d="M32 8v9M32 47v9M8 32h9M47 32h9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-              <circle cx="32" cy="32" r="3" fill="currentColor"/>
-            </svg>
-          </div>
-          <h3>Ready when you are</h3>
-          <p>Pick a From and To, or start from a demo pair. Every answer is the fewest buses, not the fewest stops.</p>
+          <div class="eyebrow">Not searched yet</div>
+          <h2>Two stops, one answer</h2>
+          <p>Every result is the journey with the fewest buses. The cards below show the layers BFS settled and why no shorter trip can exist.</p>
           <div class="demo-pairs" id="demoPairs"></div>
           <ol class="how">
-            <li><span>01</span>Load a sample or paste your own network.</li>
-            <li><span>02</span>Close routes and watch the answer reroute.</li>
-            <li><span>03</span>Open BFS layers to see why it is minimal.</li>
+            <li><b>01</b><span>Pick a From and a To — or click two stops on the map.</span></li>
+            <li><b>02</b><span>Close a route and the answer re-routes, on the same index.</span></li>
+            <li><b>03</b><span>Open BFS layers to see where the destination first appears.</span></li>
           </ol>
         </div>
 
@@ -176,8 +162,9 @@
     <div class="dialog-body">
       <header class="dialog-head">
         <div>
+          <div class="eyebrow">Network</div>
           <h2 id="networkDialogTitle">Choose a network</h2>
-          <p class="micro">Loaded once, queried many times. Any sample is ordinary input text.</p>
+          <p class="micro">Every sample is plain input text. The index is built once, then queried many times.</p>
         </div>
         <button type="button" class="icon-btn" id="closeDialog" aria-label="Close">×</button>
       </header>
@@ -186,16 +173,16 @@
 
       <div class="paste-block">
         <div class="paste-head">
-          <label class="paste-label" for="pasteInput">Or paste a network</label>
-          <span class="micro">routes &lt;n&gt; then n lines of <span class="mono">&lt;name&gt; &lt;k&gt; &lt;stops…&gt;</span></span>
+          <h3>Or paste a network</h3>
+          <span class="micro"><span class="mono">routes &lt;n&gt;</span> then n lines of <span class="mono">&lt;name&gt; &lt;k&gt; &lt;stops…&gt;</span></span>
         </div>
         <textarea id="pasteInput" spellcheck="false" placeholder="routes 3&#10;R1 3 1 2 7&#10;R2 3 3 6 7&#10;R3 2 7 8&#10;&#10;query 1 6"></textarea>
         <div class="dialog-error" id="pasteError" role="alert" hidden></div>
         <div class="paste-foot">
-          <span class="micro">Limits: 400 routes · 40,000 stop appearances</span>
+          <span class="micro">At most 400 routes · 40,000 stop appearances</span>
           <div class="paste-actions">
-            <button class="ghost small" id="clearPaste" type="button" hidden>Clear saved</button>
-            <button class="primary small" id="loadPaste" type="button">Build network</button>
+            <button type="button" class="ghost small" id="clearPaste" hidden>Clear saved</button>
+            <button type="button" class="primary small" id="loadPaste">Build network</button>
           </div>
         </div>
       </div>

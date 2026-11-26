@@ -912,6 +912,7 @@ std::string mime_type(const std::string& path) {
   if (ext == "svg") return "image/svg+xml";
   if (ext == "json") return "application/json; charset=utf-8";
   if (ext == "png") return "image/png";
+  if (ext == "woff2") return "font/woff2";
   if (ext == "ico") return "image/x-icon";
   if (ext == "txt") return "text/plain; charset=utf-8";
   return "application/octet-stream";
