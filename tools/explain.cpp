@@ -193,13 +193,20 @@ void explain(const Parsed& p, const Query& q) {
     }
 
     std::cout << "\n  layer " << bus << "  " << bus
-              << (bus == 1 ? " bus" : " buses") << "\n";
-    std::cout << "    stops   : ";
-    print_list(reached, 14, ", ");
-    std::cout << "\n";
+              << (bus == 1 ? " bus" : " buses") << "  (" << reached.size()
+              << (reached.size() == 1 ? " stop" : " stops") << ")\n";
+    if (reached.size() <= 12) {
+      std::cout << "    stops   : ";
+      print_list(reached, reached.size(), ", ");
+      std::cout << "\n";
+    }
     if (!boarded.empty()) {
       std::cout << "    board   : ";
-      print_list(boarded, 10, ", ");
+      if (boarded.size() <= 8) {
+        print_list(boarded, boarded.size(), ", ");
+      } else {
+        std::cout << boarded.size() << " routes";
+      }
       std::cout << "\n";
     }
     bool has_destination = false;
@@ -209,8 +216,8 @@ void explain(const Parsed& p, const Query& q) {
       }
     }
     if (has_destination) {
-      std::cout << "    ^ destination first appears in this layer"
-                   " -> minimum " << bus
+      std::cout << "    destination: " << q.destination
+                << " first reached here -> minimum " << bus
                 << (bus == 1 ? " bus\n" : " buses\n");
     }
   }
@@ -235,12 +242,16 @@ void explain(const Parsed& p, const Query& q) {
       const std::vector<std::string> stops =
           route != nullptr ? trace_leg(*route, leg.from, leg.to)
                            : std::vector<std::string>{leg.from, leg.to};
-      std::cout << "      traverses " << stops.size() << " stops: ";
-      for (std::size_t s = 0; s < stops.size(); ++s) {
-        if (s > 0) {
+      std::cout << "      " << (stops.size() - 1) << " stops after boarding: ";
+      int per_line = 0;
+      for (std::size_t s = 1; s < stops.size(); ++s) {
+        if (s > 1) {
           std::cout << " -> ";
         }
         std::cout << stops[s];
+        if (++per_line % 6 == 0 && s + 1 < stops.size()) {
+          std::cout << "\n        ";
+        }
       }
       std::cout << "\n";
     }
@@ -273,17 +284,20 @@ int main(int argc, char** argv) {
   }
 
   Query q;
+  bool asked = false;
   if (argc > argi) {
     q.source = argv[argi++];
   } else {
     std::cout << "From: " << std::flush;
     std::getline(std::cin, q.source);
+    asked = true;
   }
   if (argc > argi) {
     q.destination = argv[argi++];
   } else {
     std::cout << "To:   " << std::flush;
     std::getline(std::cin, q.destination);
+    asked = true;
   }
   if (q.source.empty() || q.destination.empty()) {
     std::cerr << "need a source and a destination\n";
@@ -322,7 +336,7 @@ int main(int argc, char** argv) {
     for (; argi < argc; ++argi) {
       q.inactive_routes.push_back(argv[argi]);
     }
-  } else {
+  } else if (asked) {
     std::cout << "Closed routes (space separated, blank = none): "
               << std::flush;
     std::string line;
@@ -360,11 +374,10 @@ int main(int argc, char** argv) {
     return 2;
   }
 
-  std::cout << "Wayfinder - minimum-bus trace\n";
+  std::cout << "\nWayfinder - minimum-bus trace\n";
   std::cout << "network: " << network_path << "  ("
             << parsed.network.routes.size() << " routes, "
-            << parsed.network.stop_to_routes.size() << " stops, "
-            << parsed.appearances << " appearances)\n";
+            << parsed.network.stop_to_routes.size() << " stops)\n";
 
   explain(parsed, q);
   return 0;
