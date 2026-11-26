@@ -1833,6 +1833,7 @@ dialog::backdrop {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
+  pointer-events: stroke;
   transition: opacity 0.2s, stroke-width 0.2s;
 }
 

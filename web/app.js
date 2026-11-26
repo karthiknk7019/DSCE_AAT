@@ -583,6 +583,13 @@ function pathFrom(points) {
   return data;
 }
 
+function positionTooltip(tip, event) {
+  const rect = $('#mapWrap').getBoundingClientRect();
+  tip.style.left = `${event.clientX - rect.left}px`;
+  tip.style.top = `${event.clientY - rect.top}px`;
+  tip.hidden = false;
+}
+
 function makeTooltip(stop) {
   return (event) => {
     const tip = $('#tooltip');
@@ -607,10 +614,19 @@ function makeTooltip(stop) {
         );
       }
     }
-    const rect = $('#mapWrap').getBoundingClientRect();
-    tip.style.left = `${event.clientX - rect.left}px`;
-    tip.style.top = `${event.clientY - rect.top}px`;
-    tip.hidden = false;
+    positionTooltip(tip, event);
+  };
+}
+
+function makeRouteTooltip(route) {
+  return (event) => {
+    const tip = $('#tooltip');
+    clear(tip);
+    tip.appendChild(elem('b', null, route.name));
+    const status = state.closed.has(route.name) ? 'closed' : 'open';
+    const label = `${route.stops.length} stop${route.stops.length === 1 ? '' : 's'} · ${status}`;
+    tip.appendChild(elem('div', 'tt-routes', label));
+    positionTooltip(tip, event);
   };
 }
 
@@ -674,6 +690,9 @@ function drawNetworkMap(viewport, width, height) {
       opacity: closed ? 0.35 : large ? 0.42 : 0.44,
     });
     path.dataset.baseStroke = stroke;
+    path.addEventListener('mouseenter', makeRouteTooltip(route));
+    path.addEventListener('mousemove', makeRouteTooltip(route));
+    path.addEventListener('mouseleave', hideTooltip);
     state.routePaths.set(route.name, path);
     routeLayer.appendChild(path);
   }
