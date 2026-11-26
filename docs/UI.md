@@ -52,7 +52,8 @@ sequence, the total stops crossed, and all transfer (change) points — the same
 engine, more detail for the passenger and the evaluator.
 
 Everything is keyboard-friendly: `Enter` plans, `S` swaps, `/` focuses the
-origin field.
+origin field, and `F` focuses the map stop search (with `Up`/`Down`, `Enter` to
+focus on the map, `Shift+Enter` to focus and assign From/To).
 
 ## Why a C++ server and not a JS copy of the algorithm
 

@@ -51,6 +51,7 @@ Implemented and manually verified (2026-11-26):
 - [x] hover a route in the list to highlight its path on the map (`.route-hover`, **U3**)
 - [x] run all parsed `query` lines sequentially and show a clickable result table (**U4**)
 - [x] accessibility pass: `:focus-visible` rings, form `<label>`s, dialog `aria-labelledby`, tablist/tabpanel keyboard arrows, live regions, non-colour cues, AA `--dim` contrast (**U7**)
+- [x] dense-map keyboard stop search: `#stopSearch` ARIA combobox (`F` shortcut), `#focusOverlay` pan/zoom highlight, and `#focusedStopBar` Set From/To (**R8**)
 - [x] `make ui-test` API smoke; screenshots in `docs/wayfinder*.png`
 
 Verified numbers on the i7-13620H demo machine:

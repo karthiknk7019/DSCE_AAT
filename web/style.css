@@ -81,6 +81,18 @@ p {
   margin: 0;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .mono {
   font-family: var(--mono);
 }
@@ -357,6 +369,18 @@ p {
   font-size: 11px;
   line-height: 1.55;
   color: var(--dim);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .mono {
@@ -751,6 +775,158 @@ p {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.stop-search {
+  position: relative;
+  flex: 1 1 160px;
+  max-width: 240px;
+  min-width: 120px;
+}
+
+.stop-search input {
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 11.5px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.stop-search input::placeholder {
+  color: var(--dim);
+}
+
+.stop-search input:focus {
+  border-color: rgba(94, 234, 212, 0.55);
+  box-shadow: 0 0 0 2px rgba(94, 234, 212, 0.14);
+}
+
+.stop-search-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: rgba(8, 14, 26, 0.98);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.85);
+}
+
+.stop-search-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 11.5px;
+}
+
+.stop-search-item:hover,
+.stop-search-item.active {
+  background: rgba(94, 234, 212, 0.12);
+  color: var(--mint);
+}
+
+.stop-search-item .sname {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stop-search-item .smeta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  flex-shrink: 0;
+}
+
+.stop-search-empty {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.focus-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  border-radius: 10px;
+  background: rgba(8, 14, 26, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 32px -16px rgba(0, 0, 0, 0.85);
+}
+
+.focus-stop-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mint);
+}
+
+.focus-stop-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+.focus-act {
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text);
+  font-size: 10.5px;
+  padding: 3px 8px;
+}
+
+.focus-act:hover {
+  border-color: rgba(94, 234, 212, 0.45);
+  color: var(--mint);
+}
+
+.focus-close {
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 5px;
+}
+
+.focus-close:hover {
+  color: var(--text);
+}
+
+.focus-ring {
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 2.2;
+}
+
+.focus-pulse {
+  fill: rgba(94, 234, 212, 0.14);
+  stroke: rgba(94, 234, 212, 0.55);
+  stroke-width: 1.2;
 }
 
 .stage-hint {
@@ -2101,6 +2277,14 @@ dialog::backdrop {
   .topbar {
     padding: 8px 10px;
     gap: 8px;
+  }
+  .stop-search {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .stop-search input {
+    height: 36px;
   }
   .stage {
     height: 380px;

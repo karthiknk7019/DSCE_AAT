@@ -62,7 +62,7 @@ and are **not on `main` yet**; do not duplicate that work.
 | R5 | P2 | Both directions per route | unclaimed | contract discussion | requires a naming rule or grammar change; do not do silently |
 | R6 | P2 | Data and licence panel | unclaimed | Role 2 | attribution + source link + generated date visible in the dialog |
 | R7 | P2 | Geo coverage test | unclaimed | Role 3 | every stop in `bmtc.txt` exists in `bmtc.json`; every query has a journey; smoke includes the expected output |
-| R8 | P2 | Dense-map keyboard stop search | unclaimed | Role 2 | type a stop instead of hunting 2,175 dots; focus and selection accessible |
+| R8 | P2 | Dense-map keyboard stop search | done | Role 2 (karthiknk7019) | `make && make test && make ui-test && bash tools/smoke.sh && node --check web/app.js` passed; `#stopSearch` ARIA combobox (`F` shortcut, Up/Down/Enter/Shift+Enter/Esc), `#focusOverlay` O(1) pulse/ring pan+zoom, and `#focusedStopBar` Set From/To actions |
 
 ## Notes
 

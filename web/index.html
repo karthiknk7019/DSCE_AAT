@@ -99,6 +99,22 @@
             <button type="button" id="tabNetwork" role="tab" data-mode="network" class="on" aria-selected="true" aria-controls="mapWrap">Route map</button>
             <button type="button" id="tabLayers" role="tab" data-mode="layers" aria-selected="false" aria-controls="mapWrap" tabindex="-1">BFS layers</button>
           </div>
+          <div class="stop-search" id="stopSearchWrap">
+            <label class="sr-only" for="stopSearch">Find stop on map</label>
+            <input
+              id="stopSearch"
+              type="search"
+              role="combobox"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Find stop (F)"
+              aria-label="Find stop on map"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="stopSearchResults"
+            >
+            <div class="stop-search-menu" id="stopSearchResults" role="listbox" aria-label="Matching stops" hidden></div>
+          </div>
           <div class="stage-actions">
             <span class="stage-hint" id="stageHint">drag to pan · scroll to zoom</span>
             <button type="button" class="icon-btn" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
@@ -111,6 +127,13 @@
 
         <div class="map-wrap" id="mapWrap" role="tabpanel" aria-labelledby="tabNetwork">
           <svg id="map" role="img" aria-label="Network map"></svg>
+          <div class="focus-bar" id="focusedStopBar" role="region" aria-label="Focused stop" hidden>
+            <span class="focus-stop-name" id="focusedStopName"></span>
+            <span class="focus-stop-meta" id="focusedStopMeta"></span>
+            <button type="button" class="focus-act" id="focusSetFrom">Set From</button>
+            <button type="button" class="focus-act" id="focusSetTo">Set To</button>
+            <button type="button" class="focus-close" id="focusClear" aria-label="Clear focused stop">×</button>
+          </div>
           <div class="tooltip" id="tooltip" hidden></div>
           <div class="map-legend" id="mapLegend" hidden></div>
           <div class="map-caption" id="mapCaption"></div>

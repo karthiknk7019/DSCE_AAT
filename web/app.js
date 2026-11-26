@@ -54,6 +54,7 @@ const state = {
   stopSet: new Set(),
   colorFor: new Map(),
   stops: [],
+  sortedStops: [],
   positions: new Map(),
   layerPositions: new Map(),
   bounds: null,
@@ -70,6 +71,10 @@ const state = {
   log: [],
   queries: [],
   viewport: null,
+  focusLayer: null,
+  focusedStop: null,
+  searchMatches: [],
+  searchActiveIndex: -1,
   routeLayer: null,
   routePaths: new Map(),
   hoveredRoute: null,
@@ -291,6 +296,9 @@ function indexNetwork() {
       state.stopSet.add(stop);
     }
   });
+  state.sortedStops = state.stops.slice().sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true })
+  );
 }
 
 function colorFor(routeName) {
@@ -1190,6 +1198,11 @@ function renderMap(options) {
   } else {
     drawNetworkMap(viewport, width, height);
   }
+
+  const focusLayer = svgEl('g', { id: 'focusOverlay' });
+  state.focusLayer = focusLayer;
+  viewport.appendChild(focusLayer);
+  renderFocusOverlay();
 
   if (opts.fit) {
     fitView();
@@ -2326,6 +2339,14 @@ async function installNetwork(name, routes, options) {
   state.closed = new Set();
   state.result = null;
   state.impact = null;
+  state.focusedStop = null;
+  state.searchMatches = [];
+  state.searchActiveIndex = -1;
+  if ($('#stopSearch')) {
+    $('#stopSearch').value = '';
+    closeStopSearch();
+  }
+  renderFocusedStopBar();
   state.batchToken += 1;
   state.batchRunning = false;
   state.batchError = null;
@@ -2370,7 +2391,301 @@ async function loadSample(file, options) {
   }
 }
 
-// ---------------------------------------------------------------- url hash
+function renderFocusOverlay() {
+  if (!state.focusLayer) {
+    return;
+  }
+  clear(state.focusLayer);
+  const stop = state.focusedStop;
+  if (!stop) {
+    return;
+  }
+  const positions =
+    state.mode === 'layers' ? state.layerPositions : state.positions;
+  const point = positions ? positions.get(stop) : null;
+  if (!point) {
+    return;
+  }
+
+  state.focusLayer.appendChild(
+    svgEl('circle', {
+      cx: point.x,
+      cy: point.y,
+      r: 14,
+      class: 'focus-pulse',
+    })
+  );
+  state.focusLayer.appendChild(
+    svgEl('circle', {
+      cx: point.x,
+      cy: point.y,
+      r: 7,
+      class: 'focus-ring',
+    })
+  );
+  const label = svgEl('text', {
+    x: point.x,
+    y: point.y - 18,
+    class: 'stop-label strong',
+    'text-anchor': 'middle',
+  });
+  label.textContent = stop;
+  state.focusLayer.appendChild(label);
+}
+
+function renderFocusedStopBar() {
+  const bar = $('#focusedStopBar');
+  if (!bar) {
+    return;
+  }
+  const stop = state.focusedStop;
+  if (!stop) {
+    bar.hidden = true;
+    return;
+  }
+  const routes = state.stopRoutes.get(stop);
+  const count = routes ? routes.size : 0;
+  $('#focusedStopName').textContent = stop;
+  $('#focusedStopMeta').textContent = `${count} route${count === 1 ? '' : 's'}`;
+  bar.hidden = false;
+}
+
+function clearFocusedStop() {
+  state.focusedStop = null;
+  renderFocusOverlay();
+  renderFocusedStopBar();
+}
+
+function focusStopOnMap(stop, options) {
+  const opts = options || {};
+  const positions =
+    state.mode === 'layers' ? state.layerPositions : state.positions;
+  const point = positions ? positions.get(stop) : null;
+  if (!point) {
+    toast(
+      state.mode === 'layers'
+        ? `${stop} is not reachable in this BFS view`
+        : `Stop "${stop}" is not on the map`
+    );
+    return;
+  }
+  const wrap = $('#mapWrap');
+  const width = Math.max(320, wrap.clientWidth);
+  const height = Math.max(240, wrap.clientHeight);
+  const targetK = Math.min(
+    6,
+    Math.max(state.view.k, state.stops.length > 240 ? 2.4 : 1.45)
+  );
+  state.view = {
+    k: targetK,
+    x: width / 2 - point.x * targetK,
+    y: height / 2 - point.y * targetK,
+  };
+  state.focusedStop = stop;
+  applyView();
+  renderFocusOverlay();
+  renderFocusedStopBar();
+  if (opts.assign) {
+    pickStop(stop);
+  }
+}
+
+function filterStopMatches(queryText) {
+  const q = queryText.trim().toLowerCase();
+  if (!q) {
+    return [];
+  }
+  const prefix = [];
+  const substr = [];
+  for (const stop of state.sortedStops) {
+    const lower = stop.toLowerCase();
+    if (lower.startsWith(q)) {
+      prefix.push(stop);
+    } else if (lower.includes(q)) {
+      substr.push(stop);
+    }
+    if (prefix.length >= 12) {
+      break;
+    }
+  }
+  return prefix.concat(substr).slice(0, 12);
+}
+
+function closeStopSearch() {
+  const input = $('#stopSearch');
+  const menu = $('#stopSearchResults');
+  if (!input || !menu) {
+    return;
+  }
+  state.searchMatches = [];
+  state.searchActiveIndex = -1;
+  input.setAttribute('aria-expanded', 'false');
+  input.removeAttribute('aria-activedescendant');
+  menu.hidden = true;
+  clear(menu);
+}
+
+function renderStopSearchMenu() {
+  const input = $('#stopSearch');
+  const menu = $('#stopSearchResults');
+  if (!input || !menu) {
+    return;
+  }
+  clear(menu);
+  const matches = state.searchMatches;
+  if (matches.length === 0) {
+    const q = input.value.trim();
+    if (!q) {
+      closeStopSearch();
+      return;
+    }
+    input.setAttribute('aria-expanded', 'true');
+    input.removeAttribute('aria-activedescendant');
+    menu.hidden = false;
+    menu.appendChild(elem('div', 'stop-search-empty', `No stop matching "${q}"`));
+    return;
+  }
+
+  input.setAttribute('aria-expanded', 'true');
+  menu.hidden = false;
+  matches.forEach((stop, index) => {
+    const item = elem('button', 'stop-search-item');
+    item.type = 'button';
+    item.id = `stop-opt-${index}`;
+    item.setAttribute('role', 'option');
+    const active = index === state.searchActiveIndex;
+    item.setAttribute('aria-selected', String(active));
+    if (active) {
+      item.classList.add('active');
+    }
+
+    item.appendChild(elem('span', 'sname', stop));
+    const count = (state.stopRoutes.get(stop) || new Set()).size;
+    item.appendChild(
+      elem('span', 'smeta', `${count} ${count === 1 ? 'route' : 'routes'}`)
+    );
+
+    item.addEventListener('mousedown', (event) => {
+      // Prevent input blur before click selects the stop.
+      event.preventDefault();
+    });
+    item.addEventListener('click', (event) => {
+      input.value = stop;
+      closeStopSearch();
+      focusStopOnMap(stop, { assign: event.shiftKey });
+    });
+    menu.appendChild(item);
+  });
+
+  if (state.searchActiveIndex >= 0 && state.searchActiveIndex < matches.length) {
+    const activeId = `stop-opt-${state.searchActiveIndex}`;
+    input.setAttribute('aria-activedescendant', activeId);
+    const activeNode = $(`#${activeId}`);
+    if (activeNode) {
+      activeNode.scrollIntoView({ block: 'nearest' });
+    }
+  } else {
+    input.removeAttribute('aria-activedescendant');
+  }
+}
+
+function initStopSearch() {
+  const input = $('#stopSearch');
+  const wrap = $('#stopSearchWrap');
+  if (!input || !wrap) {
+    return;
+  }
+
+  const updateMatches = () => {
+    state.searchMatches = filterStopMatches(input.value);
+    state.searchActiveIndex = state.searchMatches.length > 0 ? 0 : -1;
+    renderStopSearchMenu();
+  };
+
+  input.addEventListener('input', updateMatches);
+  input.addEventListener('focus', () => {
+    if (input.value.trim()) {
+      updateMatches();
+    }
+  });
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+      if (state.searchMatches.length === 0) {
+        updateMatches();
+        return;
+      }
+      event.preventDefault();
+      state.searchActiveIndex =
+        (state.searchActiveIndex + 1) % state.searchMatches.length;
+      renderStopSearchMenu();
+    } else if (event.key === 'ArrowUp') {
+      if (state.searchMatches.length === 0) {
+        return;
+      }
+      event.preventDefault();
+      state.searchActiveIndex =
+        (state.searchActiveIndex - 1 + state.searchMatches.length) %
+        state.searchMatches.length;
+      renderStopSearchMenu();
+    } else if (event.key === 'Enter') {
+      const idx = state.searchActiveIndex >= 0 ? state.searchActiveIndex : 0;
+      const chosen = state.searchMatches[idx];
+      if (chosen) {
+        event.preventDefault();
+        input.value = chosen;
+        closeStopSearch();
+        focusStopOnMap(chosen, { assign: event.shiftKey });
+      }
+    } else if (event.key === 'Escape') {
+      if (!$('#stopSearchResults').hidden) {
+        event.preventDefault();
+        closeStopSearch();
+      } else if (input.value) {
+        event.preventDefault();
+        input.value = '';
+        closeStopSearch();
+      } else {
+        input.blur();
+      }
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!wrap.contains(event.target)) {
+      closeStopSearch();
+    }
+  });
+
+  $('#focusSetFrom').addEventListener('click', () => {
+    if (!state.focusedStop) {
+      return;
+    }
+    $('#fromInput').value = state.focusedStop;
+    syncClearButtons();
+    if ($('#toInput').value.trim()) {
+      runQuery();
+    } else {
+      $('#toInput').focus();
+    }
+  });
+
+  $('#focusSetTo').addEventListener('click', () => {
+    if (!state.focusedStop) {
+      return;
+    }
+    $('#toInput').value = state.focusedStop;
+    syncClearButtons();
+    if ($('#fromInput').value.trim()) {
+      runQuery();
+    } else {
+      $('#fromInput').focus();
+    }
+  });
+
+  $('#focusClear').addEventListener('click', () => {
+    clearFocusedStop();
+  });
+}
 
 function updateHash() {
   const params = new URLSearchParams();
@@ -2546,6 +2861,7 @@ function exportPng() {
 }
 
 function bindEvents() {
+  initStopSearch();
   $('#findBtn').addEventListener('click', () => runQuery());
   for (const id of ['#fromInput', '#toInput']) {
     const input = $(id);
@@ -2842,6 +3158,10 @@ function bindEvents() {
     }
     if (event.key === 's' || event.key === 'S') {
       $('#swapBtn').click();
+    } else if (event.key === 'f' || event.key === 'F') {
+      event.preventDefault();
+      $('#stopSearch').focus();
+      $('#stopSearch').select();
     } else if (event.key === '/') {
       event.preventDefault();
       $('#fromInput').focus();
