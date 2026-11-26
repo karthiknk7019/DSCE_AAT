@@ -2436,6 +2436,115 @@ function renderSampleGrid() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// U12 — Export the visible map as SVG or PNG (client-side, no dependency)
+// ---------------------------------------------------------------------------
+
+/**
+ * Collect the computed CSS custom-property values we bake into the SVG so the
+ * exported file looks right without an external stylesheet.
+ * We only need the variables that the map SVG itself uses.
+ */
+function mapCssVars() {
+  const style = getComputedStyle(document.documentElement);
+  const names = [
+    '--bg', '--bg-2', '--text', '--text-muted', '--dim',
+    '--line', '--line-strong', '--accent', '--accent-dim',
+  ];
+  return names
+    .map((v) => `${v}:${style.getPropertyValue(v).trim()}`)
+    .join(';');
+}
+
+/**
+ * Clone the #map SVG, embed a <style> block with resolved CSS variables and
+ * a background rect, then return a serialised SVG string ready to save.
+ */
+function buildExportSvg() {
+  const src = $('#map');
+  const clone = src.cloneNode(/* deep */ true);
+
+  // Copy the live width/height so the exported file has explicit dimensions.
+  const { width, height } = src.getBoundingClientRect();
+  clone.setAttribute('width', Math.round(width));
+  clone.setAttribute('height', Math.round(height));
+
+  // Embed a <defs><style> with the resolved CSS vars so colours render offline.
+  const vars = mapCssVars();
+  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  style.textContent = `:root{${vars}}`;
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  defs.appendChild(style);
+  clone.insertBefore(defs, clone.firstChild);
+
+  // Insert a background rect so the PNG export doesn't get a transparent bg.
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  bg.setAttribute('width', '100%');
+  bg.setAttribute('height', '100%');
+  bg.setAttribute('fill', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#060a12');
+  clone.insertBefore(bg, clone.children[1] || null); // after <defs>
+
+  return new XMLSerializer().serializeToString(clone);
+}
+
+/** Trigger a browser file download for the given blob/url with a given name. */
+function triggerDownload(url, filename) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  // Clean up after the click event propagates.
+  setTimeout(() => { document.body.removeChild(a); }, 300);
+}
+
+/** Download the current map view as an SVG file. */
+function exportSvg() {
+  const svgText = buildExportSvg();
+  const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const name = (state.networkName || 'wayfinder').replace(/[^a-z0-9_-]/gi, '_');
+  triggerDownload(url, `${name}_map.svg`);
+  // Revoke after a tick — download is queued by then.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('SVG downloaded');
+}
+
+/**
+ * Download the current map view as a PNG file.
+ * Draws the serialised SVG onto a Canvas via an Image element, then exports
+ * as PNG.  No canvas taint: the SVG is a data URI containing no foreign images.
+ */
+function exportPng() {
+  const svgText = buildExportSvg();
+  const src = $('#map');
+  const { width, height } = src.getBoundingClientRect();
+  const scale = window.devicePixelRatio || 1;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, width, height);
+    URL.revokeObjectURL(url);
+    const name = (state.networkName || 'wayfinder').replace(/[^a-z0-9_-]/gi, '_');
+    triggerDownload(canvas.toDataURL('image/png'), `${name}_map.png`);
+    toast('PNG downloaded');
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
+    toast('PNG export failed — SVG could not be rasterised');
+  };
+  img.src = url;
+}
+
 function bindEvents() {
   $('#findBtn').addEventListener('click', () => runQuery());
   for (const id of ['#fromInput', '#toInput']) {
@@ -2720,6 +2829,10 @@ function bindEvents() {
     const ok = await copyText(location.href);
     toast(ok ? 'Link copied' : 'Could not copy the link');
   });
+
+  // U12 — SVG / PNG export buttons in the stage toolbar.
+  $('#exportSvgBtn').addEventListener('click', () => exportSvg());
+  $('#exportPngBtn').addEventListener('click', () => exportPng());
 
   document.addEventListener('keydown', (event) => {
     const tag = (event.target.tagName || '').toLowerCase();

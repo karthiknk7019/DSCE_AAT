@@ -42,7 +42,7 @@ ID order. Do not wait to be asked.**
 | U9 | P1 | Persist a pasted network in `localStorage` | done | Role 3 (Antigravity) | `savePastedNetwork`/`loadSavedPastedNetwork`/`clearSavedPastedNetwork` in `web/app.js` + `#clearPaste` in `web/index.html`; reload restores name + routes, "Clear saved" removes it |
 | U10 | P2 | k-shortest / alternative journeys panel | unclaimed | Role 1 | new API field, tests, UI list; still BFS |
 | U11 | P2 | Server request log + optional `--threads N` | unclaimed | shared | opt-in; default remains single-threaded |
-| U12 | P2 | Export the map as SVG/PNG | unclaimed | Role 3 | client-side download; no new dependency |
+| U12 | P2 | Export the map as SVG/PNG | done | Role 3 (Antigravity) | `buildExportSvg`/`exportSvg`/`exportPng`/`triggerDownload` in `web/app.js`; `#exportSvgBtn` and `#exportPngBtn` in `.stage-actions`; brace/paren balance verified; SVG inlines CSS vars + bg rect; PNG rasterises via Canvas at device pixel ratio |
 | U13 | P2 | Deploy notes (systemd user unit, reverse proxy) | unclaimed | shared | documented only; loopback by default |
 | U14 | P2 | Light theme via CSS variables | unclaimed | Role 3 | toggle persists; contrast checked |
 | U15 | P0 | Realistic large-city sample: replace the uniform lattice in `samples/city-large.txt` with a seeded generator (corridors, hubs, feeders, uneven route lengths) | claimed | Hermes (Role 3 session) | generator committed; `make && make test && bash tools/smoke.sh` byte-exact; route-length and stop-degree distributions varied; contract limits respected |
